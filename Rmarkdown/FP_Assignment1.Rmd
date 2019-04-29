@@ -9,22 +9,23 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+### Overarching Question: 
+- How will climate change impacts on bark beetle populations and tree populations influence forest carbon sequestration?
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+- Approach: This larger model relies on three submodels: 1) bark beetle population, 2) tree population, and 3) tree volume burned. 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+- Expectations: We expect temperature changes to influence the success of both populations. Water availability has been show to be influential in tree defense from bark beetles. Carbon sequestration will incorporate the volume of dead trees and forest NPP to provide information about how much carbon is sequestered in the forest following a fire. 
 
-```{r cars}
-summary(cars)
+- Extra component: The probility of fire and the fire's severity will be a user controlled input. Three fire severity levels will be pre-defined and selected by the user (high, medium, and low).
+
+###Rationale for Model Importance:
+INSERT 1-2 paragraphs here...
+
+
+##Beginning Model Inputs: 
+```{r}
+
+
+
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
