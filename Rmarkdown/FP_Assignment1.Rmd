@@ -8,42 +8,48 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-###########################
-#Just adding in the assigment description. Let's delete when we're done.
-1. Identify a question for which the use of a model would help you to answer it. Select a question that has the following characteristics. The model should involve at least 3 sub models:
- a. It would be interesting to perform sensitivity analysis for at least two parameters
- 
- b. At least one sub-model should include either an ODE or a spatial model
- 
- c. Provide some rationale for why this is an important question to answer and why a model is needed (1-2 paragraphs)
+
+############################
+###*Just adding in the assigment description. Let's delete when we're done.*
+*** Next to items that are done/assignment requirements that our model meets.
+
+1. Identify a question for which the use of a model would help you to answer it. Select a question that has the following characteristics. The model should involve at least 3 sub models:  
++ *** a. It would be interesting to perform sensitivity analysis for at least two parameters  
+      - Both population models: Beetle - r and K. Pine tree: Initial conditions, growth rates, fecundity, etc.                      
+
++ *** b. At least one sub-model should include either an ODE or a spatial model  
+     - The beetle  model will contain an ODE
+   
++ c. Provide some rationale for why this is an important question to answer and why a model is needed (1-2 paragraphs)
 
 2. Develop a conceptual model of your approach
- a. Identify the characteristics of submodels that you will use - spatial or lumped, dynamic or static, deterministic or stochastic, physically based/abstract?
+ *** a. Identify the characteristics of submodels that you will use - spatial or lumped, dynamic or static, deterministic or stochastic, physically based/abstract?
  
- b. Identify the goal of your model  - what is the question that it will be used to answer; for which types of users
++ b. Identify the goal of your model  - what is the question that it will be used to answer; for which types of users
  
- **c. Design a figure to illustrate your conceptual model
++ *** c. Design a figure to illustrate your conceptual model     
+    - Below
  
- d. Determine the inputs, outputs that will be used for each submodes
-
++ *** d. Determine the inputs, outputs that will be used for each submodels      
+    - Code chunks below
 You will complete a draft version of I and II and submit as an Rmarkdown document or text file by May 1.
 #############################
 
 ### Overarching Question: 
-- How will climate change impacts on bark beetle populations and tree populations influence forest carbon sequestration?
-
+####How will climate change impacts on bark beetle populations and tree populations influence forest carbon sequestration?
+***
 - Approach: This larger model relies on three submodels: 1) a bark beetle population growth model, 2) a tree population projection model, and 3) tree volume burned. 
 
-- Expectations: We expect temperature changes to influence the success of both populations. Water availability has been show to be influential in tree defense from bark beetles. Carbon sequestration will incorporate the volume of dead trees and forest NPP to provide information about how much carbon is sequestered in the forest following a fire. 
+- Expectations: We expect temperature increases to decrease bark beetle mortality rates and thus increase the population growth rate. Temperature is expected to a have mixed effect on the pine population -- Increased temperature can increase the length of a growing season which increases net primary productivity (NPP). However, increased temperature also decreases soil moisture which has been shown to decrease primary producticity. Therefore, the effect of temperature on trees will be linked to water availability. Water availability has been show to be positively influential in tree defense from bark beetles. Carbon sequestration will incorporate the volume of dead trees and forest NPP to provide information about how much carbon is sequestered in the forest following a fire. 
 
 - Extra component: The probility of fire and the fire's severity will be a user controlled input. Three fire severity levels will be pre-defined and selected by the user (high, medium, and low).
 
-###Rationale for Model Importance:
+### Rationale for Model Importance:
 INSERT 1-2 paragraphs here...
 
 
-##Beginning Model Inputs: 
-### 1. Bark beetle population growth model
+### Beginning Model Inputs: 
+#### 1. Bark beetle population growth model
 * Lumped
 * Static (Will potentially make dynamic to then also make the pine model more dynamic)
 * Deterministic
@@ -59,34 +65,74 @@ K=100000 # Carrying capacity
 # Model -- Logistic growth model. Once we've chosen a particular beetle and tree species, we hope to find a published growth model. 
 ```
 
-### 2. Pine population projection model
+#### 2. Pine population projection model
 * Lumped
 * Static
 * Hopefully stochastic, dependent on available information
 * Physically-based
 ```{r pine_projection_model}
 # Data input examples
-# Stage
 
+# Matrix population model based on size/stage classes, depending on availability of published matrix models
+n_pine <- c("n_1","n_2","n_3") # Initial population size
 
+A_pine <- as.matrix(0.5, 1, 4,
+                    0.3, 0, 0,
+                    0, 0.5, 0,
+                    0,  0, 0.8) # Matrix model with 3 stage classes
 
-
+# Can use this type of model to make state predictions about demographic structure of population & estimate number of trees that died. This model can easily be applied over time. The survival terms can be dependent on bark beetle population size to increased mortality over time.
 ```
 
-### 3. Model of forest volume burned
+#### 3. Model of forest volume burned
 * Lumped
 * Static
 * Deterministic
 * Physically-based
 ```{r forest_burned}
+# Data input examples
+n_pine <- c("n_1","n_2","n_3")
 
+dbh_1 = 10
+dbh_2 = 20
+dbh_3 = 30
+H = 10 # Height
+prob_fire <- 0.3
+fire_severity <- c("low","medium","high")
 
+b_0 = 0.1 # Tree specific volume coefficient
+b_1 = 2 # Tree specific volume coefficient - Cylinder factor form ratio
 
+# Combined variable model -- Commonly used by the U.S. Forest Service
+forest_biomass <- b_0 + b_1*dbh_1^2*H
+
+# volume_burned <- forest_biomass*prob_fire*fire_severity
+# Conversion of volume burned to a volume of carbon
 ```
 
-
-**c. Design a figure to illustrate your conceptual model**
+### Bringing it all together
+##### $$Change~in~carbon~sequestration~due~to~bark~beetle~and~climate~impact = NPP - carbon~released~during~forest~fire$$
 
 <center>
 ![](../FP_ConceptualModel.png)
+</center>
+  
+\
+\
+\
+\
+
+
+  
+  
+  
+  
+
+
+
+
+
+
+
+
 
