@@ -2,7 +2,9 @@
 title: "ESM232_FinalProject"
 author: "Emma Mendonsa & Claire Powers"
 date: "April 29, 2019"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -35,9 +37,11 @@ knitr::opts_chunk$set(echo = TRUE)
 You will complete a draft version of I and II and submit as an Rmarkdown document or text file by May 1.
 #############################
 
+
 ### Overarching Question: 
-***
 ####How will climate change impacts on bark beetle populations and tree populations influence forest carbon sequestration?
+
+
 - Goal of model: Create a model that can used to estimate how climate change and bark beetle simultaneously impact the carbon sequestration of pine trees in a given area. We will choose a particular species of pine and particular species of bark beetle, but    those can be exchanged for other species by future users.  
 
 - Approach: This larger model relies on three submodels: 1) a bark beetle population growth model, 2) a tree population projection model, and 3) tree volume burned. 
@@ -52,7 +56,7 @@ INSERT 1-2 paragraphs here...
 
 
 ### Beginning Model Inputs: 
-***
+
 #### 1. Bark beetle population growth model
 * Lumped
 * Static (Will potentially make dynamic to then also make the pine model more dynamic)
@@ -122,8 +126,7 @@ forest_biomass <- b_0 + b_1*dbh_1^2*H
 # Conversion of volume burned to a volume of carbon
 ```
 
-### Bringing it all together
-***
+### Bringing it all together  
 ##### $$Change~in~carbon~sequestration~due~to~bark~beetle~and~climate~impact = NPP - carbon~released~during~forest~fire$$
 
 <center>
