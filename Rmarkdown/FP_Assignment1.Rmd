@@ -25,7 +25,7 @@ knitr::opts_chunk$set(echo = TRUE)
 2. Develop a conceptual model of your approach
  *** a. Identify the characteristics of submodels that you will use - spatial or lumped, dynamic or static, deterministic or stochastic, physically based/abstract?
  
-+ b. Identify the goal of your model  - what is the question that it will be used to answer; for which types of users
++ b. Identify the goal of your model  - ***what is the question that it will be used to answer; for which types of users
  
 + *** c. Design a figure to illustrate your conceptual model     
     - Below
@@ -36,8 +36,10 @@ You will complete a draft version of I and II and submit as an Rmarkdown documen
 #############################
 
 ### Overarching Question: 
-####How will climate change impacts on bark beetle populations and tree populations influence forest carbon sequestration?
 ***
+####How will climate change impacts on bark beetle populations and tree populations influence forest carbon sequestration?
+- Goal of model: Create a model that can used to estimate how climate change and bark beetle simultaneously impact the carbon sequestration of pine trees in a given area. We will choose a particular species of pine and particular species of bark beetle, but    those can be exchanged for other species by future users.  
+
 - Approach: This larger model relies on three submodels: 1) a bark beetle population growth model, 2) a tree population projection model, and 3) tree volume burned. 
 
 - Expectations: We expect temperature increases to decrease bark beetle mortality rates and thus increase the population growth rate. Temperature is expected to a have mixed effect on the pine population -- Increased temperature can increase the length of a growing season which increases net primary productivity (NPP). However, increased temperature also decreases soil moisture which has been shown to decrease primary producticity. Therefore, the effect of temperature on trees will be linked to water availability. Water availability has been show to be positively influential in tree defense from bark beetles. Carbon sequestration will incorporate the volume of dead trees and forest NPP to provide information about how much carbon is sequestered in the forest following a fire. 
@@ -45,10 +47,12 @@ You will complete a draft version of I and II and submit as an Rmarkdown documen
 - Extra component: The probility of fire and the fire's severity will be a user controlled input. Three fire severity levels will be pre-defined and selected by the user (high, medium, and low).
 
 ### Rationale for Model Importance:
+***
 INSERT 1-2 paragraphs here...
 
 
 ### Beginning Model Inputs: 
+***
 #### 1. Bark beetle population growth model
 * Lumped
 * Static (Will potentially make dynamic to then also make the pine model more dynamic)
@@ -57,8 +61,10 @@ INSERT 1-2 paragraphs here...
 * Will include an ODE
 
 ```{r bark_beetle}
-# Data input examples
+# Variables
 N_0=10000 # Initial population size
+
+# Paramters
 r=0.75 # Intrinsic growth rate
 K=100000 # Carrying capacity
 
@@ -71,7 +77,13 @@ K=100000 # Carrying capacity
 * Hopefully stochastic, dependent on available information
 * Physically-based
 ```{r pine_projection_model}
-# Data input examples
+# Variables
+# Survival terms in matrix model
+# Initial population structure
+
+# Paramters
+# All inputs into matrix model except survival will be parameters, defined by published information
+
 
 # Matrix population model based on size/stage classes, depending on availability of published matrix models
 n_pine <- c("n_1","n_2","n_3") # Initial population size
@@ -90,16 +102,16 @@ A_pine <- as.matrix(0.5, 1, 4,
 * Deterministic
 * Physically-based
 ```{r forest_burned}
-# Data input examples
+# Variables
 n_pine <- c("n_1","n_2","n_3")
+fire_severity <- c("low","medium","high")
+prob_fire <- 0.3
 
-dbh_1 = 10
+# Parameters
+dbh_1 = 10 # DBH as defined by stages in matrix population model
 dbh_2 = 20
 dbh_3 = 30
-H = 10 # Height
-prob_fire <- 0.3
-fire_severity <- c("low","medium","high")
-
+H = 10 # Height at each stage 
 b_0 = 0.1 # Tree specific volume coefficient
 b_1 = 2 # Tree specific volume coefficient - Cylinder factor form ratio
 
@@ -111,6 +123,7 @@ forest_biomass <- b_0 + b_1*dbh_1^2*H
 ```
 
 ### Bringing it all together
+***
 ##### $$Change~in~carbon~sequestration~due~to~bark~beetle~and~climate~impact = NPP - carbon~released~during~forest~fire$$
 
 <center>
