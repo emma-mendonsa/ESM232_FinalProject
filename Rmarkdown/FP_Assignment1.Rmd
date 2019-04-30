@@ -8,6 +8,26 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+###### Just adding in the assigment description. Let's delete when we're done.
+1. Identify a question for which the use of a model would help you to answer it. Select a question that has the following characteristics. The model should involve at least 3 sub models:
+ a. It would be interesting to perform sensitivity analysis for at least two parameters
+ 
+ b. At least one sub-model should include either an ODE or a spatial model
+ 
+ c. Provide some rationale for why this is an important question to answer and why a model is needed (1-2 paragraphs)
+
+2. Develop a conceptual model of your approach
+ a. Identify the characteristics of submodes that you will use - spatial or lumped, dynamic or static, deterministic or stochastic, physically based/abstract?
+ 
+ b. Identify the goal of your model  - what is the question that it will be used to answer; for which types of users
+ 
+ **c. Design a figure to illustrate your conceptual model
+ 
+ d. Determine the inputs, outputs that will be used for each submodes
+
+You will complete a draft version of I and II and submit as an Rmarkdown document or text file by May 1.
+
+
 
 ### Overarching Question: 
 - How will climate change impacts on bark beetle populations and tree populations influence forest carbon sequestration?
@@ -28,4 +48,7 @@ INSERT 1-2 paragraphs here...
 
 
 ```
+
+c. Design a figure to illustrate your conceptual model
+![](../FP_ConceptualModel.png)
 
