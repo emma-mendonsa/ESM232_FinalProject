@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ############################
-###*Just adding in the assigment description. Let's delete when we're done.*
+###Assigment Description:
 *** Next to items that are done/assignment requirements that our model meets.
 
 1. Identify a question for which the use of a model would help you to answer it. Select a question that has the following characteristics. The model should involve at least 3 sub models:  
@@ -51,9 +51,9 @@ You will complete a draft version of I and II and submit as an Rmarkdown documen
 - Extra component: The probility of fire and the fire's severity will be a user controlled input. Three fire severity levels will be pre-defined and selected by the user (high, medium, and low).
 
 ### Rationale for Model Importance:
-***
-INSERT 1-2 paragraphs here...
+According to the US Forest Service, an estimated 129 million trees have dies in California's national forests since 2010, due to the interactions of climate change, drought, and bark beetle infestations. Our model seeks to illistrate the potential impact these factors can have on climate sequestration. Typically, forests are considered carbon sinks, yet as tree mortality rises from increased beetle infestation and drought, there is a threat of converting these sinks to sources. 
 
+The rate of carbon release from a forest is strongly linked to net primary productivity (NPP) and tree mortality. With the increasing threat of wildfires to California's forests, this model will calculate to "stock" of dead trees likely to be burnt, releasing carbon, across a set of three fire types (low, moderate, and high severity fires). Understanding the interplay between fire, NPP, bark beetles, forests, and climate change can illuminate the possible magnitude of this growing problem and incentivize new solutions.
 
 ### Beginning Model Inputs: 
 
