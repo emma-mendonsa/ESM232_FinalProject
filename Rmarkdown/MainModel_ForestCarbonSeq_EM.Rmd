@@ -1,0 +1,55 @@
+---
+title: "ForestCarbonSeq"
+author: "Claire Powers"
+date: "5/27/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Pulling submodels together
+
+####Beetle: Logistic model
+```{r}
+source("../R/SubModel1_BarkBeetles.R")
+
+t=100
+
+beetles = as.data.frame(matrix(nrow = t,ncol = 2))
+colnames(beetles) = c("time","pop")
+beetles[,1] = seq(1:t)
+
+r = 0.3
+K = 10000
+N_0 = 500
+
+for(i in 2:t){
+  beetles[1,2] = N_0
+  beetles[i,2] = beetle_pop(beetles$pop[i-1],r=r,K=K)
+}
+
+plot(beetles$time,beetles$pop)
+```
+
+####Pine: Growth... model
+```{r}
+
+#Emma's making pine model w/ matrix
+
+```
+
+####Climate dataframes
+```{r}
+
+#temp_BAU = increase of 10 degrees over 80 yrs
+#temp <0C = pine beetle babies killed
+
+BAU_temp_summer = rnorm(n = 80, mean = 70, sd = 5)
+BAU_temp_winter = rnorm(n = 80, mean = )
+BAU_precip_BAU = rnorm(n = 80, mean = 20, sd = 5)
+
+```
+
+
