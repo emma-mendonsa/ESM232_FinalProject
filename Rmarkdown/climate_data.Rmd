@@ -39,6 +39,7 @@ Sp_tmin_avg = cellStats(Sp_tmin,"mean")
 Su_tmax_avg = cellStats(Su_tmax,"mean")
 
 clim_BAU = data.frame(year = 2010:2100,
+                      time = 1:91,
                       apr_snow = rep(NA,91),
                       cwd = rep(NA,91),
                       F_tmin = rep(NA,91),
@@ -47,9 +48,11 @@ clim_BAU = data.frame(year = 2010:2100,
                       Su_tmax = rep(NA,91))
 ```
 
+
 ```{r}
 source("../R/climate_change_fun.R")
 
+# Fill in climate data table
 clim_BAU$apr_snow = climate_change_fun(total_change = -snwpck_avg*0.4,time = 91,init_value = snwpck_avg)
 clim_BAU$cwd = climate_change_fun(total_change = 100,time = 91,init_value = cwd_avg)
 clim_BAU$F_tmin = climate_change_fun(total_change = 10,time = 91,init_value = F_tmin_avg)
@@ -58,29 +61,6 @@ clim_BAU$W_tmin = climate_change_fun(total_change = 10,time = 91,init_value = W_
 clim_BAU$Su_tmax = climate_change_fun(total_change = 10,time = 91,init_value = Su_tmax_avg)
 ```
 
-
-
-### Pulling submodels together
-```{r beetles}
-source("../R/SubModel1_BarkBeetles.R")
-
-t=100
-
-beetles = as.data.frame(matrix(nrow = t,ncol = 2))
-colnames(beetles) = c("time","pop")
-beetles[,1] = seq(1:t)
-
-r = 0.3
-K = 10000
-N_0 = 500
-
-for(i in 2:t){
-  beetles[1,2] = N_0
-  beetles[i,2] = beetle_pop(beetles$pop[i-1],r=r,K=K)
-}
-
-plot(beetles$time,beetles$pop)
-```
 
 
 
