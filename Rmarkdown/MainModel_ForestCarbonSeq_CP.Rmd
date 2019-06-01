@@ -9,11 +9,67 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r packages_and_function, message=FALSE}
+library(tidyverse)
+library(sensitivity)
+library(reshape2)
+library(cowplot)
+library(popbio)
+library(rgdal)
+library(raster)
+
+source("../R/SubModel0_climate_change_fun.R")
+source("../R/SubModel1_BarkBeetles.R")
+source("../R/SubModel2_PineModel.R")
+
+options(scipen = 999)
+```
+
+### Average Climate Data
+```{r generate_input_data}
+# Find average tmin and tmax values for Sierra Nevada Ecoregion based on historic data
+cwd_raw = raster("../climate_data/cwd1981_2010_ave_HST_1559416632/cwd1981_2010_ave_HST_1559416632.tif")
+snwpck_raw = raster("../climate_data/aprpck1981_2010_ave_HST_1559416720/aprpck1981_2010_ave_HST_1559416720.tif")
+W_tmin_raw = raster("../climate_data/tmn1981_2010djf_ave_HST_1559415579/tmn1981_2010djf_ave_HST_1559415579.tif")
+Sp_tmin_raw = raster("../climate_data/tmn1981_2010mar_ave_HST_1559415612/tmn1981_2010mar_ave_HST_1559415612.tif")
+F_tmin_raw = raster("../climate_data/tmn1981_2010nov_ave_HST_1559415731/tmn1981_2010nov_ave_HST_1559415731.tif")
+Su_tmax_raw = raster("../climate_data/tmx1981_2010jja_ave_HST_1559415851/tmx1981_2010jja_ave_HST_1559415851.tif")
+crop_file = readOGR("../climate_data/SNC_Boundary_Shapefile/SNC_Boundary.shp")
+
+cwd = crop(cwd_raw,crop_file)
+snwpck = crop(snwpck_raw,crop_file)
+W_tmin = crop(W_tmin_raw,crop_file)
+Sp_tmin = crop(Sp_tmin_raw,crop_file)
+F_tmin = crop(F_tmin_raw,crop_file)
+Su_tmax = crop(Su_tmax_raw,crop_file)
+
+cwd_avg = cellStats(cwd,"mean")
+snwpck_avg = cellStats(snwpck,"mean")
+W_tmin_avg = cellStats(W_tmin,"mean")
+F_tmin_avg = cellStats(F_tmin,"mean")
+Sp_tmin_avg = cellStats(Sp_tmin,"mean")
+Su_tmax_avg = cellStats(Su_tmax,"mean")
+
+clim_BAU = data.frame(year = 2010:2100,
+                      time = 1:91,
+                      apr_snow = rep(NA,91),
+                      cwd = rep(NA,91),
+                      F_tmin = rep(NA,91),
+                      W_tmin = rep(NA,91),
+                      Sp_tmin = rep(NA,91),
+                      Su_tmax = rep(NA,91))
+
+# Fill in climate data table
+clim_BAU$apr_snow = climate_change_fun(total_change = -snwpck_avg*0.4,time = 91,init_value = snwpck_avg)
+clim_BAU$cwd = climate_change_fun(total_change = 100,time = 91,init_value = cwd_avg)
+clim_BAU$F_tmin = climate_change_fun(total_change = 10,time = 91,init_value = F_tmin_avg)
+clim_BAU$Sp_tmin = climate_change_fun(total_change = 10,time = 91,init_value = Sp_tmin_avg)
+clim_BAU$W_tmin = climate_change_fun(total_change = 10,time = 91,init_value = W_tmin_avg)
+clim_BAU$Su_tmax = climate_change_fun(total_change = 10,time = 91,init_value = Su_tmax_avg)
+```
+
 ### Beetles
 ```{r beetles}
-source("../R/SubModel1_BarkBeetles.R")
-options(scipen = 9999)
-
 beetles = data.frame(year = 2010:2100,
                      time = 1:91,
                      r_max = seq(from=1.16,to=2,length.out=91),
@@ -32,5 +88,195 @@ for(i in 2:nrow(beetles)){
 plot(beetles$time,beetles$pop)
 ```
 
+#### Pines
+```{r baseline, message=FALSE}
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.08 
+F3 = 0.3 
+F4 = 1.7 
+
+# Survival
+p0 = 0.94
+p1 = 0.983
+p2 = 0.98
+p3 = 0.981
+p4 = 0.996
+
+# Growth
+g01 = 0.002
+g12 = 0.011
+g23 = 0.015
+g34 = 0.015
+
+# Initial Population
+P0 = c(100,100,100,100,100)
+
+# Time
+years = 91
+
+# Fertility vector to put into matrix
+pine_fert = c(F0,F1,F2,F3,F4)
+
+# Survival vector to put into matrix
+pine_surv = c(p0,p1,p2,p3,p4)
+
+# Growth vector to put into matrix
+pine_growth = c(g01,g12,g23,g34)
+
+stages = c("ht<1.37","0.1to10cm","10.1to20cm","20.1to40cm",">40cm")
+
+# Run model
+pine_baseline = whitePine_matrix_model(fertility = pine_fert,
+                                        survival = pine_surv,
+                                        growth=pine_growth,
+                                        initial_pop = P0,
+                                        time=years)
+
+carbon_seq = pine_baseline[[5]]
+```
 
 
+Just climate change
+```{r}
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742 
+F3 = 0.2536 
+F4 = 1.6902 
+
+# Survival
+p0 = 0.9353/2 
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
+
+# Growth
+g01 = 0.0018/2
+g12 = 0.0104/2
+g23 = 0.0144/2
+g34 = 0.0144/2
+
+# Initial Population: Assume that we start with 10 adult rabbits.
+P0 = c(100,100,100,100,100)
+
+# Time
+years = 91
+
+# Fertility vector to put into matrix
+pine_fert = c(F0,F1,F2,F3,F4)
+
+# Survival vector to put into matrix
+pine_surv = c(p0,p1,p2,p3,p4)
+
+# Growth vector to put into matrix
+pine_growth = c(g01,g12,g23,g34)
+
+pine_cc = whitePine_matrix_model(fertility = pine_fert,
+                                        survival = pine_surv,
+                                        growth=pine_growth,
+                                        initial_pop = P0,
+                                        time=years)
+
+carbon_seq_cc = pine_cc[[5]]
+```
+
+# Just bark beetle
+```{r just_beetles}
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742 
+F3 = 0.2536 
+F4 = 1.6902 
+
+# Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720/2
+p3 = 0.9806/2
+p4 = 0.9959/2
+
+# Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+
+# Initial Population
+P0 = c(100,100,100,100,100)
+
+# Time
+years = 91
+
+# Fertility vector to put into matrix
+pine_fert = c(F0,F1,F2,F3,F4)
+
+# Survival vector to put into matrix
+pine_surv = c(p0,p1,p2,p3,p4)
+
+# Growth vector to put into matrix
+pine_growth = c(g01,g12,g23,g34)
+
+pine_beetle = whitePine_matrix_model(fertility = pine_fert,
+                                        survival = pine_surv,
+                                        growth=pine_growth,
+                                        initial_pop = P0,
+                                        time=years)
+
+carbon_seq_bb = pine_beetle[[5]]
+```
+
+# Both
+```{r cc_and_bb}
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742 
+F3 = 0.2536 
+F4 = 1.6902 
+
+# Survival
+p0 = 0.9353/2
+p1 = 0.9827
+p2 = 0.9720/2
+p3 = 0.9806/2
+p4 = 0.9959/2
+
+# Growth
+g01 = 0.0018/2
+g12 = 0.0104/2
+g23 = 0.0144/2
+g34 = 0.0144/2
+
+# Initial Population
+P0 = c(100,100,100,100,100)
+
+# Time
+years = 91
+
+# Fertility vector to put into matrix
+pine_fert = c(F0,F1,F2,F3,F4)
+
+# Survival vector to put into matrix
+pine_surv = c(p0,p1,p2,p3,p4)
+
+# Growth vector to put into matrix
+pine_growth = c(g01,g12,g23,g34)
+
+pine_both = whitePine_matrix_model(fertility = pine_fert,
+                                        survival = pine_surv,
+                                        growth=pine_growth,
+                                        initial_pop = P0,
+                                        time=years)
+
+carbon_seq_both = pine_both[[5]]
+carbon_seq = cbind(carbon_seq,carbon_seq_cc,carbon_seq_bb,carbon_seq_both)
+```
+
+#
+
+#

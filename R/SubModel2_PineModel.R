@@ -35,6 +35,8 @@ whitePine_matrix_model = function(fertility, survival, growth, initial_pop, time
     whitePine_matrix[i+1,i] = growth[i]
   } 
   
+  lambda = popbio::lambda(whitePine_matrix)
+  
   # Matrix to store population structure through time with a row for each age and column for each time step
   pop_structure = as.data.frame(matrix(nrow=nstages, ncol=time))
   rownames(pop_structure) = 1:5
@@ -67,5 +69,5 @@ whitePine_matrix_model = function(fertility, survival, growth, initial_pop, time
     total_carbon[i]=sum(biomass[,i])*carbon_coeff
   }
   
-  return(list(pop_structure,total_pop,biomass,total_carbon))
+  return(list(lambda,pop_structure,total_pop,biomass,total_carbon))
 }
