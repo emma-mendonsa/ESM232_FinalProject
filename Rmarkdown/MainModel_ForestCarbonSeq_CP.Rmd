@@ -1,0 +1,75 @@
+---
+title: "ForestCarbonSeq"
+author: "Claire Powers"
+date: "5/27/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r generate_input_data}
+library(tidyverse)
+library(rgdal)
+library(raster)
+
+# Find average tmin and tmax values for Sierra Nevada Ecoregion based on historic data
+cwd_raw = raster("../climate_data/cwd1981_2010_ave_HST_1559416632/cwd1981_2010_ave_HST_1559416632.tif")
+snwpck_raw = raster("../climate_data/aprpck1981_2010_ave_HST_1559416720/aprpck1981_2010_ave_HST_1559416720.tif")
+W_tmin_raw = raster("../climate_data/tmn1981_2010djf_ave_HST_1559415579/tmn1981_2010djf_ave_HST_1559415579.tif")
+Sp_tmin_raw = raster("../climate_data/tmn1981_2010mar_ave_HST_1559415612/tmn1981_2010mar_ave_HST_1559415612.tif")
+F_tmin_raw = raster("../climate_data/tmn1981_2010nov_ave_HST_1559415731/tmn1981_2010nov_ave_HST_1559415731.tif")
+Su_tmax_raw = raster("../climate_data/tmx1981_2010jja_ave_HST_1559415851/tmx1981_2010jja_ave_HST_1559415851.tif")
+crop_file = readOGR("../climate_data/SNC_Boundary_Shapefile/SNC_Boundary.shp")
+
+cwd = crop(cwd_raw,crop_file)
+snwpck = crop(snwpck_raw,crop_file)
+W_tmin = crop(W_tmin_raw,crop_file)
+Sp_tmin = crop(Sp_tmin_raw,crop_file)
+F_tmin = crop(F_tmin_raw,crop_file)
+Su_tmax = crop(Su_tmax_raw,crop_file)
+
+cwd_avg = cellStats(cwd,"mean")
+snwpck_avg = cellStats(snwpck,"mean")
+W_tmin_avg = cellStats(W_tmin,"mean")
+F_tmin_avg = cellStats(F_tmin,"mean")
+Sp_tmin_avg = cellStats(Sp_tmin,"mean")
+Su_tmax_avg = cellStats(Su_tmax,"mean")
+
+clim_BAU = data.frame(year = 2010:2100,
+                      apr_snow = rep(NA,91),
+                      cwd = rep(NA,91),
+                      F_tmin = rep(NA,91),
+                      W_tmin = rep(NA,91),
+                      Sp_tmin = rep(NA,91),
+                      Su_tmax = rep(NA,91))
+
+```
+
+
+### Pulling submodels together
+```{r beetles}
+source("../R/SubModel1_BarkBeetles.R")
+
+t=100
+
+beetles = as.data.frame(matrix(nrow = t,ncol = 2))
+colnames(beetles) = c("time","pop")
+beetles[,1] = seq(1:t)
+
+r = 0.3
+K = 10000
+N_0 = 500
+
+for(i in 2:t){
+  beetles[1,2] = N_0
+  beetles[i,2] = beetle_pop(beetles$pop[i-1],r=r,K=K)
+}
+
+plot(beetles$time,beetles$pop)
+```
+
+
+
