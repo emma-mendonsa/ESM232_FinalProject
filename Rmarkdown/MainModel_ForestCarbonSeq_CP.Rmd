@@ -29,41 +29,41 @@ options(scipen = 999)
 ```{r generate_input_data}
 # Find average tmin and tmax values for Sierra Nevada Ecoregion based on historic data
 cwd_raw = raster("../climate_data/cwd1981_2010_ave_HST_1559416632/cwd1981_2010_ave_HST_1559416632.tif")
-snwpck_raw = raster("../climate_data/aprpck1981_2010_ave_HST_1559416720/aprpck1981_2010_ave_HST_1559416720.tif")
+# snwpck_raw = raster("../climate_data/aprpck1981_2010_ave_HST_1559416720/aprpck1981_2010_ave_HST_1559416720.tif")
 W_tmin_raw = raster("../climate_data/tmn1981_2010djf_ave_HST_1559415579/tmn1981_2010djf_ave_HST_1559415579.tif")
-Sp_tmin_raw = raster("../climate_data/tmn1981_2010mar_ave_HST_1559415612/tmn1981_2010mar_ave_HST_1559415612.tif")
-F_tmin_raw = raster("../climate_data/tmn1981_2010nov_ave_HST_1559415731/tmn1981_2010nov_ave_HST_1559415731.tif")
+# Sp_tmin_raw = raster("../climate_data/tmn1981_2010mar_ave_HST_1559415612/tmn1981_2010mar_ave_HST_1559415612.tif")
+# F_tmin_raw = raster("../climate_data/tmn1981_2010nov_ave_HST_1559415731/tmn1981_2010nov_ave_HST_1559415731.tif")
 Su_tmax_raw = raster("../climate_data/tmx1981_2010jja_ave_HST_1559415851/tmx1981_2010jja_ave_HST_1559415851.tif")
 crop_file = readOGR("../climate_data/SNC_Boundary_Shapefile/SNC_Boundary.shp")
 
 cwd = crop(cwd_raw,crop_file)
-snwpck = crop(snwpck_raw,crop_file)
+# snwpck = crop(snwpck_raw,crop_file)
 W_tmin = crop(W_tmin_raw,crop_file)
-Sp_tmin = crop(Sp_tmin_raw,crop_file)
-F_tmin = crop(F_tmin_raw,crop_file)
+# Sp_tmin = crop(Sp_tmin_raw,crop_file)
+# F_tmin = crop(F_tmin_raw,crop_file)
 Su_tmax = crop(Su_tmax_raw,crop_file)
 
 cwd_avg = cellStats(cwd,"mean")
-snwpck_avg = cellStats(snwpck,"mean")
+# snwpck_avg = cellStats(snwpck,"mean")
 W_tmin_avg = cellStats(W_tmin,"mean")
-F_tmin_avg = cellStats(F_tmin,"mean")
-Sp_tmin_avg = cellStats(Sp_tmin,"mean")
+# F_tmin_avg = cellStats(F_tmin,"mean")
+# Sp_tmin_avg = cellStats(Sp_tmin,"mean")
 Su_tmax_avg = cellStats(Su_tmax,"mean")
 
 clim_BAU = data.frame(year = 2010:2100,
                       time = 1:91,
-                      apr_snow = rep(NA,91),
+                      # apr_snow = rep(NA,91),
                       cwd = rep(NA,91),
-                      F_tmin = rep(NA,91),
+                      # F_tmin = rep(NA,91),
                       W_tmin = rep(NA,91),
-                      Sp_tmin = rep(NA,91),
+                      # Sp_tmin = rep(NA,91),
                       Su_tmax = rep(NA,91))
 
 # Fill in climate data table
-clim_BAU$apr_snow = climate_change_fun(total_change = -snwpck_avg*0.4,time = 91,init_value = snwpck_avg)
+# clim_BAU$apr_snow = climate_change_fun(total_change = -snwpck_avg*0.4,time = 91,init_value = snwpck_avg)
 clim_BAU$cwd = climate_change_fun(total_change = 100,time = 91,init_value = cwd_avg)
-clim_BAU$F_tmin = climate_change_fun(total_change = 10,time = 91,init_value = F_tmin_avg)
-clim_BAU$Sp_tmin = climate_change_fun(total_change = 10,time = 91,init_value = Sp_tmin_avg)
+# clim_BAU$F_tmin = climate_change_fun(total_change = 10,time = 91,init_value = F_tmin_avg)
+# clim_BAU$Sp_tmin = climate_change_fun(total_change = 10,time = 91,init_value = Sp_tmin_avg)
 clim_BAU$W_tmin = climate_change_fun(total_change = 10,time = 91,init_value = W_tmin_avg)
 clim_BAU$Su_tmax = climate_change_fun(total_change = 10,time = 91,init_value = Su_tmax_avg)
 ```
@@ -72,23 +72,31 @@ clim_BAU$Su_tmax = climate_change_fun(total_change = 10,time = 91,init_value = S
 ```{r beetles}
 beetles = data.frame(year = 2010:2100,
                      time = 1:91,
-                     r_max = seq(from=1.16,to=2,length.out=91),
-                     pop = rep(NA,91),
-                     climate_coeff = seq(from=0.8,to=1,length.out=91))
+                     climate_coeff = seq(from=1,to = 1.5,length.out = 91), ## Ideally this is a function of maximum summer temperature
+                     r_max = rep(NA,91),
+                     pop = rep(NA,91))
 
 r_0 = 1.16
-K = 10000000
-N_0 = 500
+K_0 = 10000 # Make this a function of forest biomass
+btl_pop_0 = 500
 
 for(i in 2:nrow(beetles)){
-  beetles[1,4] = N_0
-  beetles[i,4] = beetles$climate_coeff[i]*beetle_pop(beetles$pop[i-1],r=beetles$r_max[i],K=K)
+  
+  # beetles$climate_coeff[1] = 1
+  # beetles$climate_coeff[i] = 1/(1-round(abs(clim_BAU$W_tmin[i]-clim_BAU$W_tmin[i-1])/abs(clim_BAU$W_tmin[i-1]),2))
+  
+  beetles$r_max[1] = r_0
+  beetles$r_max[i] = round(beetles$r_max[1]*beetles$climate_coeff[i],2)
+  
+  beetles[1,5] = btl_pop_0
+  beetles[i,5] = beetles$climate_coeff[i]*beetle_pop(beetles$pop[i-1],r=beetles$r_max[i],K=K)
 }
 
-plot(beetles$time,beetles$pop)
+
 ```
 
 #### Pines
+# Baseline
 ```{r baseline, message=FALSE}
 # Fecundity
 F0 = 0 
@@ -98,8 +106,8 @@ F3 = 0.3
 F4 = 1.7 
 
 # Survival
-p0 = 0.94
-p1 = 0.983
+p0 = 0.9353
+p1 = 0.985
 p2 = 0.98
 p3 = 0.981
 p4 = 0.996
@@ -114,7 +122,7 @@ g34 = 0.015
 P0 = c(100,100,100,100,100)
 
 # Time
-years = 91
+years = 2
 
 # Fertility vector to put into matrix
 pine_fert = c(F0,F1,F2,F3,F4)
@@ -134,11 +142,9 @@ pine_baseline = whitePine_matrix_model(fertility = pine_fert,
                                         initial_pop = P0,
                                         time=years)
 
-carbon_seq = pine_baseline[[5]]
 ```
 
-
-Just climate change
+# Just climate change
 ```{r}
 # Fecundity
 F0 = 0 
@@ -277,6 +283,70 @@ carbon_seq_both = pine_both[[5]]
 carbon_seq = cbind(carbon_seq,carbon_seq_cc,carbon_seq_bb,carbon_seq_both)
 ```
 
-#
 
-#
+# Combining beetle and pine
+```{r}
+years = 91
+combined = data.frame(year = 2010:2100,
+                      btl_r_coef = round(seq(from=1,to = 1.5,length.out=91),2),
+                      btl_r = round(r_0*combined$btl_r_coef,2),
+                      btl_pop = rep(0,91),
+                      p_p0 = seq(from = p0, to=0.5, length.out = 91),
+                      p_p1 = seq(from = p1, to = 0.5, length.out = 91),
+                      p_p2 = seq(from = p2, to = 0.5,length.out = 91),
+                      p_p3 = seq(from = p3, to = 0.5, length.out = 91),
+                      p_p4 = seq(from = p4, to = 0.5, length.out = 91),
+                      g01 = seq(from = g01, to = g01/2, length.out = 91),
+                      g12 = seq(from = g12,to = g12/2, length.out = 91),
+                      g23 = seq(from = g23, to = g23/2, length.out = 91),
+                      g34 = seq(from = g34, to = g34/2, length.out = 91),
+                      pine0 = rep(0,91),
+                      pine1 = rep(0,91),
+                      pine2 = rep(0,91),
+                      pine3 = rep(0,91),
+                      pine4 = rep(0,91),
+                      total_pine = rep(0,91),
+                      forest_carbon = rep(0,91))
+
+combined$btl_pop[1] = btl_pop_0
+combined[1,5:9] = pine_surv
+combined[1,10:13] = pine_growth
+combined[1,14:18] = P0
+
+r_0 = 1.16
+btl_pop_0 = 5000
+time=2
+
+for(i in 2:years){
+  
+  # Beetles
+  combined$btl_pop[i] = beetle_pop(N=combined$btl_pop[i-1],
+                                   r=combined$btl_r[i-1],
+                                   K = btl_pop_0*log(sum(combined[i-1,16:18])))
+
+  # Pines
+  pine_surv = as.numeric(combined[i-1,5:9])
+  pine_growth = as.numeric(combined[i-1,10:13])
+  init_pop = as.numeric(combined[i-1,14:18])
+  
+  pine = whitePine_matrix_model(fertility = pine_fert,
+                                survival = pine_surv,
+                                growth = pine_growth,
+                                time=2,
+                                initial_pop = init_pop)
+  
+  pine_pop = pine[[1]]
+  combined[i,14:18] = pine_pop[,2]
+  combined[i,19] = sum(combined[i,14:18])
+  
+  frst_crbn = pine[[4]]
+  combined[i,20] = frst_crbn[2]
+}
+
+```
+
+
+
+
+
+
