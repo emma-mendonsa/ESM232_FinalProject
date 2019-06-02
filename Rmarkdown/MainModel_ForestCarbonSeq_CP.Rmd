@@ -89,7 +89,7 @@ for(i in 2:nrow(beetles)){
   beetles$r_max[i] = round(beetles$r_max[1]*beetles$climate_coeff[i],2)
   
   beetles[1,5] = btl_pop_0
-  beetles[i,5] = beetles$climate_coeff[i]*beetle_pop(beetles$pop[i-1],r=beetles$r_max[i],K=K)
+  beetles[i,5] = beetles$climate_coeff[i]*beetle_pop(beetles$pop[i-1],r=beetles$r_max[i],K=K_0)
 }
 
 
@@ -187,7 +187,7 @@ pine_cc = whitePine_matrix_model(fertility = pine_fert,
                                         initial_pop = P0,
                                         time=years)
 
-carbon_seq_cc = pine_cc[[5]]
+carbon_seq_cc = pine_cc[[4]]
 ```
 
 # Just bark beetle
@@ -233,7 +233,7 @@ pine_beetle = whitePine_matrix_model(fertility = pine_fert,
                                         initial_pop = P0,
                                         time=years)
 
-carbon_seq_bb = pine_beetle[[5]]
+carbon_seq_bb = pine_beetle[[4]]
 ```
 
 # Both
@@ -279,17 +279,41 @@ pine_both = whitePine_matrix_model(fertility = pine_fert,
                                         initial_pop = P0,
                                         time=years)
 
-carbon_seq_both = pine_both[[5]]
-carbon_seq = cbind(carbon_seq,carbon_seq_cc,carbon_seq_bb,carbon_seq_both)
+carbon_seq_both = pine_both[[4]]
+
 ```
 
 
 # Combining beetle and pine
 ```{r}
 years = 91
+r_0 = 1.16
+btl_pop_0 = 5000
+time=2
+
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.08 
+F3 = 0.3 
+F4 = 1.7 
+
+# Survival
+p0 = 0.9353
+p1 = 0.985
+p2 = 0.98
+p3 = 0.981
+p4 = 0.996
+
+# Growth
+g01 = 0.002
+g12 = 0.011
+g23 = 0.015
+g34 = 0.015
+
 combined = data.frame(year = 2010:2100,
                       btl_r_coef = round(seq(from=1,to = 1.5,length.out=91),2),
-                      btl_r = round(r_0*combined$btl_r_coef,2),
+                      btl_r = rep(0,91),
                       btl_pop = rep(0,91),
                       p_p0 = seq(from = p0, to=0.5, length.out = 91),
                       p_p1 = seq(from = p1, to = 0.5, length.out = 91),
@@ -308,14 +332,13 @@ combined = data.frame(year = 2010:2100,
                       total_pine = rep(0,91),
                       forest_carbon = rep(0,91))
 
+combined$btl_r = round(r_0*combined$btl_r_coef,2)
 combined$btl_pop[1] = btl_pop_0
 combined[1,5:9] = pine_surv
 combined[1,10:13] = pine_growth
 combined[1,14:18] = P0
 
-r_0 = 1.16
-btl_pop_0 = 5000
-time=2
+
 
 for(i in 2:years){
   
