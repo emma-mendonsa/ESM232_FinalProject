@@ -10,9 +10,6 @@ whitePine_matrix_model = function(fertility, survival, growth, initial_pop, time
   if ((nstages!=length(survival) ))
   {return("Missing or extra data: Length of fertility doesn’t match survivability")}
   
-  if ((nstages!=length(initial_pop) ))
-  { return("Missing or extra data: Length of initial population doesn’t match length of fertility") }
-  
   # Initialize Leslie Matrix
   whitePine_matrix = matrix(nrow=nstages, ncol=nstages)
   colnames(whitePine_matrix) = stages
@@ -33,7 +30,8 @@ whitePine_matrix_model = function(fertility, survival, growth, initial_pop, time
     whitePine_matrix[i+1,i] = growth[i]
   } 
   
-  lambda = popbio::lambda(whitePine_matrix)
+  stable_stage = as.numeric(stable.stage(whitePine_matrix))
+  P0 = c(initial_pop*stable_stage[1],initial_pop*stable_stage[2],initial_pop*stable_stage[3],initial_pop*stable_stage[4],initial_pop*stable_stage[5])
   
   # Matrix to store population structure through time with a row for each age and column for each time step
   pop_structure = as.data.frame(matrix(nrow=nstages, ncol=time))
@@ -66,6 +64,8 @@ whitePine_matrix_model = function(fertility, survival, growth, initial_pop, time
   for (i in 1:time) {
     total_carbon[i]=sum(biomass[,i])*carbon_coeff
   }
+  
+  lambda = popbio::lambda(whitePine_matrix)
   
   return(list(pop_structure,total_pop,biomass,total_carbon))
 }
