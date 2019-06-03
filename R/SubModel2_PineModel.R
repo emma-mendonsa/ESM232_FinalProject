@@ -75,5 +75,5 @@ whitePine_matrix_model = function(fertility, survival, growth, initial_pop, time
   
   lambda = popbio::lambda(whitePine_matrix)
   
-  return(list(pop_structure,total_pop,biomass,total_carbon))
+  return(list(pop_structure,total_pop,biomass,total_carbon,lambda))
 }
