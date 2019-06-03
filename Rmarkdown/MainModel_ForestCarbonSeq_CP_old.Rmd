@@ -1,0 +1,533 @@
+---
+title: "ForestCarbonSeq"
+author: "Claire Powers"
+date: "5/27/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages_and_function, message=FALSE}
+library(tidyverse)
+library(sensitivity)
+library(reshape2)
+library(cowplot)
+library(popbio)
+library(rgdal)
+library(raster)
+library(deSolve)
+
+source("../R/SubModel0_climate_change_fun.R")
+source("../R/SubModel1_BarkBeetles.R")
+source("../R/SubModel2_PineModel.R")
+
+options(scipen = 999)
+```
+
+### Average Climate Data
+```{r generate_input_data}
+# Find average tmin and tmax values for Sierra Nevada Ecoregion based on historic data
+cwd_raw = raster("../climate_data/cwd1981_2010_ave_HST_1559416632/cwd1981_2010_ave_HST_1559416632.tif")
+# snwpck_raw = raster("../climate_data/aprpck1981_2010_ave_HST_1559416720/aprpck1981_2010_ave_HST_1559416720.tif")
+W_tmin_raw = raster("../climate_data/tmn1981_2010djf_ave_HST_1559415579/tmn1981_2010djf_ave_HST_1559415579.tif")
+# Sp_tmin_raw = raster("../climate_data/tmn1981_2010mar_ave_HST_1559415612/tmn1981_2010mar_ave_HST_1559415612.tif")
+# F_tmin_raw = raster("../climate_data/tmn1981_2010nov_ave_HST_1559415731/tmn1981_2010nov_ave_HST_1559415731.tif")
+Su_tmax_raw = raster("../climate_data/tmx1981_2010jja_ave_HST_1559415851/tmx1981_2010jja_ave_HST_1559415851.tif")
+crop_file = readOGR("../climate_data/SNC_Boundary_Shapefile/SNC_Boundary.shp")
+
+cwd = crop(cwd_raw,crop_file)
+# snwpck = crop(snwpck_raw,crop_file)
+W_tmin = crop(W_tmin_raw,crop_file)
+# Sp_tmin = crop(Sp_tmin_raw,crop_file)
+# F_tmin = crop(F_tmin_raw,crop_file)
+Su_tmax = crop(Su_tmax_raw,crop_file)
+
+cwd_avg = cellStats(cwd,"mean")
+# snwpck_avg = cellStats(snwpck,"mean")
+W_tmin_avg = cellStats(W_tmin,"mean")
+# F_tmin_avg = cellStats(F_tmin,"mean")
+# Sp_tmin_avg = cellStats(Sp_tmin,"mean")
+Su_tmax_avg = cellStats(Su_tmax,"mean")
+
+clim_BAU = data.frame(year = 2010:2100,
+                      time = 1:91,
+                      # apr_snow = rep(NA,91),
+                      cwd = rep(NA,91),
+                      # F_tmin = rep(NA,91),
+                      W_tmin = rep(NA,91),
+                      # Sp_tmin = rep(NA,91),
+                      Su_tmax = rep(NA,91))
+
+# Fill in climate data table
+# clim_BAU$apr_snow = climate_change_fun(total_change = -snwpck_avg*0.4,time = 91,init_value = snwpck_avg)
+clim_BAU$cwd = climate_change_fun(total_change = 100,time = 91,init_value = cwd_avg)
+# clim_BAU$F_tmin = climate_change_fun(total_change = 10,time = 91,init_value = F_tmin_avg)
+# clim_BAU$Sp_tmin = climate_change_fun(total_change = 10,time = 91,init_value = Sp_tmin_avg)
+clim_BAU$W_tmin = climate_change_fun(total_change = 10,time = 91,init_value = W_tmin_avg)
+clim_BAU$Su_tmax = climate_change_fun(total_change = 10,time = 91,init_value = Su_tmax_avg)
+```
+
+### Beetles
+```{r beetles}
+beetles = data.frame(year = 2010:2100,
+                     time = 1:91,
+                     climate_coeff = seq(from=1,to = 1.5,length.out = 91), ## Ideally this is a function of maximum summer temperature
+                     r_max = rep(NA,91),
+                     pop = rep(NA,91))
+
+r_0 = 1.16
+K_0 = 10000 # Make this a function of forest biomass
+btl_pop_0 = 500
+time = 91
+
+# set up parmaters
+parms = list(p0=btl_pop_0, r=r_0, K=K_0)
+result = ode(parms$p0, beetles$time, beetle_pop, parms)
+
+for(i in 2:nrow(beetles)){
+  
+  # beetles$climate_coeff[1] = 1
+  # beetles$climate_coeff[i] = 1/(1-round(abs(clim_BAU$W_tmin[i]-clim_BAU$W_tmin[i-1])/abs(clim_BAU$W_tmin[i-1]),2))
+  
+  beetles$r_max[1] = r_0
+  beetles$r_max[i] = round(beetles$r_max[1]*beetles$climate_coeff[i],2)
+  
+  beetles[1,5] = btl_pop_0
+  
+  parms = list(p0=beetles$pop[i-1], r=beetles$r_max[i], K=K_0)
+  result = ode(parms$p0, beetles$time, beetle_pop, parms)
+  
+  beetles[i,5] = beetles$climate_coeff[i]*beetle_pop(beetles$pop[i-1],r=beetles$r_max[i],K=K_0)
+
+  }
+
+```
+
+#### Pines
+# Baseline
+```{r baseline, message=FALSE}
+ntrees_0 = 1000
+K_0 = 100000
+# Time
+years = 91
+
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742
+F3 = 0.2536 
+F4 = 1.6902
+# Fertility vector to put into matrix
+pine_fert = c(F0,F1,F2,F3,F4)
+
+# Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
+# Survival vector to put into matrix
+pine_surv = c(p0,p1,p2,p3,p4)
+
+# Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+# Growth vector to put into matrix
+pine_growth = c(g01,g12,g23,g34)
+# Initial Population (assuming stable stage in initial timestep)
+
+stages = c("ht<1.37","0.1to10cm","10.1to20cm","20.1to40cm",">40cm")
+
+# Run model
+pine_baseline = whitePine_matrix_model(fertility = pine_fert,
+                                        survival = pine_surv,
+                                        growth=pine_growth,
+                                        initial_pop = ntrees,
+                                        time=years)
+
+pine_baseline[[4]]
+```
+
+# Just climate change
+```{r}
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742 
+F3 = 0.2536 
+F4 = 1.6902 
+
+# Survival
+p0 = 0.9353/2 
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
+
+# Growth
+g01 = 0.0018/2
+g12 = 0.0104/2
+g23 = 0.0144/2
+g34 = 0.0144/2
+
+# Time
+years = 91
+
+# Fertility vector to put into matrix
+pine_fert = c(F0,F1,F2,F3,F4)
+
+# Survival vector to put into matrix
+pine_surv = c(p0,p1,p2,p3,p4)
+
+# Growth vector to put into matrix
+pine_growth = c(g01,g12,g23,g34)
+
+pine_cc = whitePine_matrix_model(fertility = pine_fert,
+                                        survival = pine_surv,
+                                        growth=pine_growth,
+                                        initial_pop = ntrees,
+                                        time=years)
+
+carbon_seq_cc = pine_cc[[4]]
+```
+
+# Just bark beetle
+```{r just_beetles}
+
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742 
+F3 = 0.2536 
+F4 = 1.6902 
+
+# Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720/2
+p3 = 0.9806/2
+p4 = 0.9959/2
+
+# Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+
+# Initial Population
+P0 = c(100,100,100,100,100)
+
+# Time
+years = 91
+
+# Fertility vector to put into matrix
+pine_fert = c(F0,F1,F2,F3,F4)
+
+# Survival vector to put into matrix
+pine_surv = c(p0,p1,p2,p3,p4)
+
+# Growth vector to put into matrix
+pine_growth = c(g01,g12,g23,g34)
+
+pine_beetle = whitePine_matrix_model(fertility = pine_fert,
+                                        survival = pine_surv,
+                                        growth=pine_growth,
+                                        initial_pop = ntrees,
+                                        time=years)
+
+carbon_seq_bb = pine_beetle[[4]]
+```
+
+# Both
+```{r cc_and_bb}
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742 
+F3 = 0.2536 
+F4 = 1.6902 
+
+# Survival
+p0 = 0.9353/2
+p1 = 0.9827
+p2 = 0.9720/2
+p3 = 0.9806/2
+p4 = 0.9959/2
+
+# Growth
+g01 = 0.0018/2
+g12 = 0.0104/2
+g23 = 0.0144/2
+g34 = 0.0144/2
+
+# Initial Population
+P0 = c(100,100,100,100,100)
+
+# Time
+years = 91
+
+# Fertility vector to put into matrix
+pine_fert = c(F0,F1,F2,F3,F4)
+
+# Survival vector to put into matrix
+pine_surv = c(p0,p1,p2,p3,p4)
+
+# Growth vector to put into matrix
+pine_growth = c(g01,g12,g23,g34)
+
+pine_both = whitePine_matrix_model(fertility = pine_fert,
+                                        survival = pine_surv,
+                                        growth=pine_growth,
+                                        initial_pop = ntrees,
+                                        time=years)
+
+carbon_seq_both = pine_both[[4]]
+
+```
+
+### COMBINING BEETLE AND PINE MODELS
+
+# Just climate
+```{r climate}
+years = 91
+r_0 = 1.16
+btl_pop_0 = 5000
+ntrees_0 = 1000
+time=2
+K_0 = 100000
+
+# Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742
+F3 = 0.2536 
+F4 = 1.6902
+# Fertility vector to put into matrix
+pine_fert = c(F0,F1,F2,F3,F4)
+
+# Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
+# Survival vector to put into matrix
+pine_surv = c(p0,p1,p2,p3,p4)
+
+# Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+# Growth vector to put into matrix
+pine_growth = c(g01,g12,g23,g34)
+
+clim_coef = clim_BAU$cwd[1]/clim_BAU$cwd
+
+combined = data.frame(year = 2010:2100,
+                      btl_r_coef = round(seq(from=1,to = 1.5,length.out=91),2),
+                      btl_r = rep(NA,91),
+                      btl_pop = rep(NA,91),
+                      p_p0 = c(p0*clim_coef), # Climate impact
+                      p_p1 = rep(p1, 91),
+                      p_p2 = rep(p2, 91),
+                      p_p3 = rep(p3, 91), # No Beetle impact (in for loop)
+                      p_p4 = rep(p4, 91), # No Beetle impact (in for loop) 
+                      g01 = c(g01*clim_coef), # Climate impact
+                      g12 = c(g12*clim_coef), # Climate impact
+                      g23 = c(g23*clim_coef), # Climate impact
+                      g34 = c(g34*clim_coef), # Climate impact
+                      pine0 = rep(NA,91),
+                      pine1 = rep(NA,91),
+                      pine2 = rep(NA,91), 
+                      pine3 = rep(NA,91), 
+                      pine4 = rep(NA,91),
+                      total_pine = rep(0,91),
+                      forest_carbon = rep(0,91))
+
+combined[,3] = round(r_0*combined$btl_r_coef,2)
+combined[1,4] = btl_pop_0
+combined[1,5:9] = pine_surv
+combined[1,14:18] = c(107,77,300,14,1)
+combined[1,19] = sum(combined[1,14:18])
+combined[1,20] = 256876
+
+for(i in 2:years){
+  
+  # Beetles
+  combined$btl_pop[i] = beetle_pop(N=combined$btl_pop[i-1],
+                                   r=combined$btl_r[i-1],
+                                   K = K_0*log(sum(combined[i-1,16:18])))
+
+  # Pines
+  pine_surv = as.numeric(combined[i-1,5:9])
+  pine_growth = as.numeric(combined[i-1,10:13])
+  init_pop = as.numeric(combined[i-1,14:18])
+  # combined$p_p3[i] = p3 # No beetle impact
+  # combined$p_p4[i] = p4 # No beetle impact
+  
+  pine = whitePine_matrix_model(fertility = pine_fert,
+                                survival = pine_surv,
+                                growth = pine_growth,
+                                time=2,
+                                initial_pop = ntrees_0)
+  
+  pine_pop = pine[[1]]
+  combined[i,14:18] = pine_pop[,2]
+  combined[i,19] = sum(combined[i,14:18])
+  
+  frst_crbn = pine[[4]]
+  combined[i,20] = frst_crbn[2]
+}
+
+climate = combined$forest_carbon
+```
+
+
+```{r beetle}
+clim_coef = 1 # Equal to one becuase no climate impact here
+pine_surv = c(p0,p1,p2,p3,p4)
+
+combined = data.frame(year = 2010:2100,
+                      btl_r_coef = round(seq(from=1,to = 1.5,length.out=91),2),
+                      btl_r = rep(NA,91),
+                      btl_pop = rep(NA,91),
+                      p_p0 = c(p0*clim_coef), # Climate impact
+                      p_p1 = rep(p1, 91),
+                      p_p2 = rep(p2, 91),
+                      p_p3 = rep(NA, 91), # Beetle impact (in for loop)
+                      p_p4 = rep(NA, 91), # Beetle impact (in for loop) 
+                      g01 = c(g01*clim_coef), # Climate impact
+                      g12 = c(g12*clim_coef), # Climate impact
+                      g23 = c(g23*clim_coef), # Climate impact
+                      g34 = c(g34*clim_coef), # Climate impact
+                      pine0 = rep(NA,91),
+                      pine1 = rep(NA,91),
+                      pine2 = rep(NA,91), 
+                      pine3 = rep(NA,91), 
+                      pine4 = rep(NA,91),
+                      total_pine = rep(0,91),
+                      forest_carbon = rep(0,91))
+
+combined[,3] = round(r_0*combined$btl_r_coef,2)
+combined[1,4] = btl_pop_0
+combined[1,5:9] = pine_surv
+combined[1,14:18] = c(107,77,300,14,1)
+combined[1,19] = sum(combined[1,14:18])
+combined[1,20] = 256876
+
+for(i in 2:years){
+  
+  # Beetles
+  combined$btl_pop[i] = beetle_pop(N=combined$btl_pop[i-1],
+                                   r=combined$btl_r[i-1],
+                                   K = K_0*log(sum(combined[i-1,16:18])))
+
+  # Pines
+  pine_surv = as.numeric(combined[i-1,5:9])
+  pine_growth = as.numeric(combined[i-1,10:13])
+  init_pop = as.numeric(combined[i-1,14:18])
+  combined$p_p3[i] = combined$p_p3[1]*log(sqrt(combined$btl_pop[1]))/log(sqrt(combined$btl_pop[i]))
+  combined$p_p4[i] = combined$p_p4[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i])
+  
+  pine = whitePine_matrix_model(fertility = pine_fert,
+                                survival = pine_surv,
+                                growth = pine_growth,
+                                time=2,
+                                initial_pop = ntrees_0)
+  
+  pine_pop = pine[[1]]
+  combined[i,14:18] = pine_pop[,2]
+  combined[i,19] = sum(combined[i,14:18])
+  
+  frst_crbn = pine[[4]]
+  combined[i,20] = frst_crbn[2]
+}
+
+beetle = combined$forest_carbon
+```
+
+
+```{r climate_beetle}
+clim_coef = clim_BAU$cwd[1]/clim_BAU$cwd
+pine_surv = c(p0,p1,p2,p3,p4)
+
+combined = data.frame(year = 2010:2100,
+                      btl_r_coef = round(seq(from=1,to = 1.5,length.out=91),2),
+                      btl_r = rep(NA,91),
+                      btl_pop = rep(NA,91),
+                      p_p0 = c(p0*clim_coef), # Climate impact
+                      p_p1 = rep(p1, 91),
+                      p_p2 = rep(p2, 91),
+                      p_p3 = rep(NA, 91), # Beetle impact (in for loop)
+                      p_p4 = rep(NA, 91), # Beetle impact (in for loop) 
+                      g01 = c(g01*clim_coef), # Climate impact
+                      g12 = c(g12*clim_coef), # Climate impact
+                      g23 = c(g23*clim_coef), # Climate impact
+                      g34 = c(g34*clim_coef), # Climate impact
+                      pine0 = rep(NA,91),
+                      pine1 = rep(NA,91),
+                      pine2 = rep(NA,91), 
+                      pine3 = rep(NA,91), 
+                      pine4 = rep(NA,91),
+                      total_pine = rep(NA,91),
+                      forest_carbon = rep(NA,91))
+
+combined[,3] = round(r_0*combined$btl_r_coef,2)
+combined[1,4] = btl_pop_0
+combined[1,5:9] = pine_surv
+combined[1,14:18] = c(107,77,300,14,1)
+combined[1,19] = sum(combined[1,14:18])
+combined[1,20] = 256876
+
+for(i in 2:years){
+  
+  # Beetles
+  combined$btl_pop[i] = beetle_pop(N=combined$btl_pop[i-1],
+                                   r=combined$btl_r[i-1],
+                                   K = K_0*log(sum(combined[i-1,16:18])))
+
+  # Pines
+  pine_surv = as.numeric(combined[i-1,5:9])
+  pine_growth = as.numeric(combined[i-1,10:13])
+  init_pop = as.numeric(combined[i-1,14:18])
+  combined$p_p3[i] = combined$p_p3[1]*log(sqrt(combined$btl_pop[1]))/log(sqrt(combined$btl_pop[i]))
+  combined$p_p4[i] = combined$p_p4[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i])
+  
+  pine = whitePine_matrix_model(fertility = pine_fert,
+                                survival = pine_surv,
+                                growth = pine_growth,
+                                time=2,
+                                initial_pop = ntrees_0)
+  
+  pine_pop = pine[[1]]
+  combined[i,14:18] = pine_pop[,2]
+  combined[i,19] = sum(combined[i,14:18])
+  
+  frst_crbn = pine[[4]]
+  combined[i,20] = frst_crbn[2]
+}
+
+climate_and_beetle = combined$forest_carbon
+```
+
+
+```{r output_vis}
+forest_carbon_df = data.frame(year = 2010:2100,beetle=beetle,climate=climate,climate_and_beetle=climate_and_beetle) %>% 
+ # filter(year != "2010"&year !="2011") %>% # weird things happening in these years. Excluding because not important to trends
+   melt(1)
+
+colnames(forest_carbon_df) = c("year","scenario","carbon")
+
+ggplot(forest_carbon_df,aes(x=year,y=carbon))+
+  geom_line(aes(color=scenario))
+```
+
+
+
+
+
