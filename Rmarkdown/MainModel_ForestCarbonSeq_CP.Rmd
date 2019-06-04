@@ -73,6 +73,8 @@ years = 91 # Total length of time
 time = 2 # Number of timesteps used in for loop. 1 for the [i-1] and 2 for [i]
 
 ntrees_0 = 1000
+clim_df = clim_BAU
+initial_carbon = 256876
 
 r_0 = 1.16 # Initial r_max value for beetles
 btl_pop_0 = 5000 # Initial size of beetle populatio
@@ -101,7 +103,7 @@ pine_surv = c(p0,p1,p2,p3,p4)
 g01 = 0.0018
 g12 = 0.0104
 g23 = 0.0144
-g34 = 0.0144
+g34 = 0.0144s
 # Pine Growth vector to put into matrix
 pine_growth = c(g01,g12,g23,g34)
 
@@ -205,6 +207,7 @@ for(i in 2:years){
 
 climate = combined$forest_carbon # Putting output of carbon into it's own dataframe to plot with others
 climate_fire = combined$post_fire_carbon #to plot with others
+
 ```
 
 # Only effected by beetles
