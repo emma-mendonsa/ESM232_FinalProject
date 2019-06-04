@@ -22,6 +22,7 @@ library(deSolve)
 source("../R/SubModel0_climate_variables.R")
 source("../R/SubModel1_BarkBeetles.R")
 source("../R/SubModel2_PineModel.R")
+source("../R/SubModel3_Fire.R")
 
 options(scipen = 999)
 ```
@@ -134,7 +135,6 @@ combined = data.frame(year = 2010:2100,
                       forest_carbon = rep(0,91), # Total forest carbon, calculated more above ground biomass. 
                       fire_prob = rep(NA,91), # Fire probability, binary (High/Low)
                       fire_sev = rep(NA,91), # Fire severity, (Low, Moderate, Severe)
-                      fire_occurs = rep(NA,91), # Fire occurs, binary (Y/N)
                       burnt_biomass = rep(0,91), # Total biomass burnt
                       post_fire_carbon = rep(0,91)) # Total forest carbon, post-fire
 
@@ -146,17 +146,15 @@ combined[1,19] = sum(combined[1,14:18]) # Initial total pine population
 combined[1,20] = 256876 # Initial carbon contained in the whitepine pop.
 combined[1,21] = ifelse(clim_BAU$Su_tmax[1] >36 && clim_BAU$W_tmin[1] > 2, "H", "L") # Initial probability of fire
 combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_snow[1] >=60, "Mod", "Sev")) # Initial severity of fire
-combined[1,23] = ifelse(combined$fire_prob[1] == "H" && combined$fire_sev[1] == "Mod" |
-                          combined$fire_sev[1] == "Sev", "Y", "N")
-combined[1,24] = 0 # Inital burnt biomass
-combined[1,25] = 256876 # Initial carbon = post-fire cabon b/c no fire occurred yet
+combined[1,23] = 0 # Inital burnt biomass
+combined[1,24] = 256876 # Initial carbon = post-fire cabon b/c no fire occurred yet
 
 for(i in 2:years){
+
 ################################################# Fire ######################
-combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
-combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
-combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_sev[i] == "Mod" |combined$fire_sev[i] == "Sev", "Y", "N")
-    
+  combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
+  combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
+  
 ################################################# Beetles ######################
 
   tmp = data.frame(time = 1:time) # Temp. data.frame for beetle output. 
@@ -171,27 +169,38 @@ combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_s
   combined$p_p3[i] = p3 # No beetle impact
   combined$p_p4[i] = p4 # No beetle impact
   
+  fire_prob = combined[i,21] # Fire probability in current time step
+  fire_sev = combined[i,22] # Fire severity in current time step
+  
   # Implement whitepine matrix model. C
-  pine = whitePine_matrix_model(fertility = pine_fert,
+  pine_fire = whitePine_matrix_FIREmodel(fertility = pine_fert,
                                 survival = pine_surv,
                                 growth = pine_growth,
+                                fire_prob = fire_prob,
+                                fire_sev = fire_sev,
                                 time=2,
                                 initial_pop = ntrees_0) 
   
-  pine_pop = pine[[1]] # Pull out pop structure
+  pine_pop = pine_fire[[1]] # Pull out pop structure
   combined[i,14:18] = pine_pop[,2] # Put into main output dataframe
   combined[i,19] = sum(combined[i,14:18]) # Sum for the total pop size
   
-  frst_crbn = pine[[4]] # Pull out forest carbon 
+  frst_crbn = pine_fire[[4]] # Pull out forest carbon 
   combined[i,20] = frst_crbn[2] # Put into main output data.frame. 
+
+
+
   
-  pine_biomass = pine[[3]] # Pull out biomass across stages
-  combined$burnt_biomass[i] = ifelse(combined$fire_occurs[i] == "Y" && 
-                                    combined$fire_sev[i] == "Low", (sum(pine_biomass[1:3,2])*.3),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Mod", (sum(pine_biomass[1:4,2])*.51),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Sev", (sum(pine_biomass[1:5,2])*.8),
-                      0)))
-  combined$post_fire_carbon[i] = combined$forest_carbon[i] - (combined$burnt_biomass[i] * 0.47)
+  #pine_biomass = pine[[3]] # Pull out biomass across stages from Pine Model
+
+  #fire_prob = combined[i,21] # Fire probability in current time step
+  #fire_sev = combined[i,22] # Fire severity in current time step
+  #forest_carbon = combined[i,20] #Forest carbon in current time step
+  
+  #fire = burnt_biomass_model(pine_biomass, fire_prob, fire_sev, forest_carbon)
+  
+  #post_fire_carb = fire[[2]]
+  #combined$post_fire_carbon[i] = post_fire_carb #Pull out Post-Fire Carbon and place into main output dataframe
 }
 
 climate = combined$forest_carbon # Putting output of carbon into it's own dataframe to plot with others

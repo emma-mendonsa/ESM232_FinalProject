@@ -9,15 +9,10 @@
 #'
 #'
 
-whitePine_matrix_model = function(fertility, survival, growth, 
-                                  initial_pop, time, carbon_coeff = 0.47) {
+whitePine_matrix_FIREmodel = function(fertility, survival, growth, 
+                                  initial_pop, fire_prob, fire_sev, time, carbon_coeff = 0.47) {
   
   nstages = length(fertility)
-  
-  ### Error checking to ensure the right data exists for each stage###
-  # Survivability value for each stae
-  if ((nstages!=length(survival) ))
-  {return("Missing or extra data: Length of fertility doesn’t match survivability")}
   
   # Initialize Leslie Matrix
   whitePine_matrix = matrix(nrow=nstages, ncol=nstages)
@@ -38,9 +33,34 @@ whitePine_matrix_model = function(fertility, survival, growth,
   for (i in 1:(nstages-1)) {
     whitePine_matrix[i+1,i] = growth[i]
   } 
+
+#Fire severity coefficients:
+  low_sev = .7
+  mod_sev = .49
+  sev_sev = .2
   
   stable_stage = as.numeric(stable.stage(whitePine_matrix))
-  P0 = c(initial_pop*stable_stage[1],initial_pop*stable_stage[2],initial_pop*stable_stage[3],initial_pop*stable_stage[4],initial_pop*stable_stage[5])
+  P0 = ifelse(fire_prob =="L", c(initial_pop*stable_stage[1],initial_pop*stable_stage[2],
+                                 initial_pop*stable_stage[3],initial_pop*stable_stage[4],
+                                 initial_pop*stable_stage[5]),
+              ifelse(fire_prob == "H" && fire_sev == "Low", 
+                     c(initial_pop*low_sev*stable_stage[1],
+                       initial_pop*low_sev*stable_stage[2],
+                       initial_pop*low_sev*stable_stage[3],
+                       initial_pop*stable_stage[4],
+                       initial_pop*stable_stage[5]),
+              ifelse(fire_prob == "H" && fire_sev == "Mod", 
+                     c(initial_pop*mod_sev*stable_stage[1],
+                       initial_pop*mod_sev*stable_stage[2],
+                       initial_pop*mod_sev*stable_stage[3],
+                       initial_pop*mod_sev*stable_stage[4],
+                       initial_pop*stable_stage[5]),
+              ifelse(fire_prob == "H" && fire_sev == "Sev", 
+                     c(initial_pop*sev_sev*stable_stage[1],
+                       initial_pop*sev_sev*stable_stage[2],
+                       initial_pop*sev_sev*stable_stage[3],
+                       initial_pop*sev_sev*stable_stage[4],
+                       initial_pop*sev_sev*stable_stage[5]),NA))))
   
   # Matrix to store population structure through time with a row for each age and column for each time step
   pop_structure = as.data.frame(matrix(nrow=nstages, ncol=time))
@@ -55,7 +75,7 @@ whitePine_matrix_model = function(fertility, survival, growth,
   
   for (i in 2:time) {
     pop_structure[,i] = round(whitePine_matrix %*% pop_structure[,i-1],0)
-    total_pop[i]=round(sum(pop_structure[,i]),0)
+    total_pop[i]= round(sum(pop_structure[,i]),0)
   }
     
   # biomass eq from Jenkins et al. 
