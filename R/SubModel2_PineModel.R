@@ -9,7 +9,8 @@
 #'
 #'
 
-whitePine_matrix_model = function(fertility, survival, growth, initial_pop, time, carbon_coeff = 0.47) {
+whitePine_matrix_model = function(fertility, survival, growth, 
+                                  initial_pop, time, carbon_coeff = 0.47) {
   
   nstages = length(fertility)
   
@@ -72,6 +73,11 @@ whitePine_matrix_model = function(fertility, survival, growth, initial_pop, time
   for (i in 1:time) {
     total_carbon[i]=sum(biomass[,i])*carbon_coeff
   }
+  
+#  post_fire_carbon = rep(0, times=time)
+#  for (i in 1:time) {
+#    post_fire_carbon[i] = total_carbon - burnt_coeff
+#  }
   
   lambda = popbio::lambda(whitePine_matrix)
   
