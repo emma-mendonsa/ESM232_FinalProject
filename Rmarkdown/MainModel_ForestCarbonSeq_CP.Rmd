@@ -155,8 +155,7 @@ for(i in 2:years){
 ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
-combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_sev[i] == "Mod"
-                                 |combined$fire_sev[i] == "Sev", "Y", "N")
+combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_sev[i] == "Mod" |combined$fire_sev[i] == "Sev", "Y", "N")
     
 ################################################# Beetles ######################
 
