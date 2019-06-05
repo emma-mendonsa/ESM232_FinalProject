@@ -373,7 +373,9 @@ combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_sn
 for(i in 2:years){
   ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
+fire_prob = combined$fire_prob[i]
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
+fire_sev = combined$fire_sev[i]
 
 
 ################################################# Beetles ######################
@@ -419,17 +421,17 @@ scenario_df = rbind.data.frame(scenario_df, combined)
 
 # BAU Trends
 ```{r BAU_output_vis}
-BAU_forest_carbon_df = cbind.data.frame(year = 2010:2100,
-                                  beetle=beetle,
-                                  climate=climate,
-                                  climate_and_beetle=climate_and_beetle) %>% 
+#BAU_forest_carbon_df = cbind.data.frame(year = 2010:2100,
+#                                  beetle=beetle,
+#                                  climate=climate,
+#                                  climate_and_beetle=climate_and_beetle) %>% 
  # filter(year != "2010"&year !="2011") %>% # weird things happening in these years. Excluding because not important to trends
-   melt(1)
+#   melt(1)
 
-colnames(BAU_forest_carbon_df) = c("year","scenario","carbon")
+#colnames(BAU_forest_carbon_df) = c("year","scenario","carbon")
 
-bau_trends = ggplot(BAU_forest_carbon_df,aes(x=year,y=carbon))+
-  geom_line(aes(color=scenario))
+#bau_trends = ggplot(BAU_forest_carbon_df,aes(x=year,y=carbon))+
+#  geom_line(aes(color=scenario))
 ```
 
 
@@ -558,7 +560,9 @@ combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_sn
 for(i in 2:years){
 ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
+fire_prob = combined$fire_prob[i]
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
+fire_sev = combined$fire_sev[i]
 
 
 ################################################# Beetles ######################
@@ -664,7 +668,9 @@ combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_sn
 for(i in 2:years){
 ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
+fire_prob = combined$fire_prob[i]
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
+fire_sev = combined$fire_sev[i]
 
 
 ################################################# Beetles ######################
@@ -767,7 +773,9 @@ combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_sn
 for(i in 2:years){
 ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
+fire_prob = combined$fire_prob[i]
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
+fire_sev = combined$fire_sev[i]
 
 
 ################################################# Beetles ######################
@@ -834,12 +842,21 @@ moderate_trends
 ```{r}
 
 ggplot(scenario_df %>% filter(climate == "BAU"), 
-       aes(x = year, y = forest_carbon, by = impact, color = impact))+
-  geom_line()
+       aes(x = year, y = forest_carbon/1000, by = impact, color = impact))+
+  geom_line()+
+  xlab("Year")+
+  ylab("Carbon in Forest (kg, thousands)")+
+  ggtitle("Climate Scenario: Business As Usual")+
+  scale_colour_discrete(name = "Forest impacted by:",
+                        labels = c("Climate", "Beetles", "Climate & Beetles"))
 
 ggplot(scenario_df %>% filter(climate == "moderate"), 
-       aes(x = year, y = forest_carbon, by = impact, color = impact))+
-  geom_line()
+       aes(x = year, y = forest_carbon/1000, by = impact, color = impact))+
+  geom_line()+
+  xlab("Year")+
+  ylab("Carbon in Forest (kg, thousands)")+
+  ggtitle("Climate Scenario: Moderate Emissions Reduction")+
+  theme(legend.position = "none")
 
 ```
 
