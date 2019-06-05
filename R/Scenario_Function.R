@@ -14,7 +14,7 @@ scenario_function = function(years, time, ntrees, initial_carbon,
                              pine_fert, pine_surv, pine_growth, stages, #Pine variables
                              clim_coef, btl_coef, #Coefficients 
                              clim_df) #Climate scenario
-
+{
 
 # There are a lot of empty columns here, but this sets the ideal order for the processing.  
 combined = data.frame(year = 2010:2100, 
@@ -41,18 +41,19 @@ combined = data.frame(year = 2010:2100,
                       total_pine = rep(0,years), # Total pine population
                       forest_carbon = rep(0,years), # Total forest carbon, calculated more above ground biomass. 
                       fire_prob = rep(NA,years), # Fire probability, binary (High/Low)
-                      fire_sev = rep(NA,years)) # Fire severity, (Low, Moderate, Severe)
+                      fire_sev = rep(NA,years), # Fire severity, (Low, Moderate, Severe)
+                      climate_name = rep(climate_name, years),
+                      impact = rep(impact, years))
 
-combined[,3] = round(r_0*combined$btl_r_coef,2) # Filling in btl_r row
-combined[1,4] = btl_pop_0 # Initial beetle pop size
+combined$btl_r = round(r_0*combined$btl_r_coef,2) # Filling in btl_r row
+combined$btl_pop[1] = btl_pop_0 # Initial beetle pop size
 combined[1,5:9] = pine_surv # Initial pine survival
 combined[1,14:18] = c(107,77,300,14,1) # Initial pine population structure
-combined[1,19] = sum(combined[1,14:18]) # Initial total pine population
-combined[1,20] = 256876 # Initial carbon contained in the whitepine pop.
-combined[1,21] = ifelse(clim_df$Su_tmax[1] >36 && clim_df$W_tmin[1] > 2, "H", "L") # Initial probability of fire
-combined[1,22] = ifelse(clim_df$apr_snow[1] >=80, "Low", ifelse(clim_df$apr_snow[1] >=60, "Mod", "Sev")) # Initial severity of fire
-combined[1,23] = 0 # Inital burnt biomass
-combined[1,24] = initial_carbon # Initial carbon = post-fire cabon b/c no fire occurred yet
+combined$total_pine[1] = sum(combined[1,14:18]) # Initial total pine population
+combined$forest_carbon[1] = 256876 # Initial carbon contained in the whitepine pop.
+combined$fire_prob[1] = ifelse(clim_df$Su_tmax[1] >36 && clim_df$W_tmin[1] > 2, "H", "L") # Initial probability of fire
+combined$fire_sev[1] = ifelse(clim_df$apr_snow[1] >=80, "Low", ifelse(clim_df$apr_snow[1] >=60, "Mod", "Sev")) # Initial severity of fire
+
 
 for(i in 2:years){
   
@@ -93,4 +94,7 @@ for(i in 2:years){
   frst_crbn = pine_fire[[4]] # Pull out forest carbon 
   combined[i,20] = frst_crbn[2] # Put into main output data.frame. 
   
+}
+
+return(list(combined))
 }

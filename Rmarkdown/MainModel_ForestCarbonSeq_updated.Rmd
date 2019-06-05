@@ -202,19 +202,24 @@ scenario_df = combined
 # Only effected by beetles
 ```{r beetle}
 years = 91
+time = 2
+impact = "beetles"
+climate = "BAU"
+
+ntrees_0 = 1000
+clim_df = clim_BAU
+initial_carbon = 256876
+
 r_0 = 1.16
 btl_pop_0 = 5000
-ntrees_0 = 1000
-time = 2
 K_0 = 100000
-
 beetle_parms = list(p0=btl_pop_0, r=r_0, K=K_0)
 
 clim_coef = 1 # Equal to one becuase no climate impact here
 
 pine_fert = c(F0,F1,F2,F3,F4)
-pine_growth = c(g01,g12,g23,g34)
 pine_surv = c(p0,p1,p2,p3,p4)
+pine_growth = c(g01,g12,g23,g34)
 
 combined = data.frame(year = 2010:2100,
                       btl_r_coef = ifelse((log(sqrt(abs(clim_BAU$W_tmin[1]-clim_BAU$W_tmin)),10)+1)<1,1,
@@ -237,11 +242,10 @@ combined = data.frame(year = 2010:2100,
                       pine4 = rep(NA,91),
                       total_pine = rep(0,91),
                       forest_carbon = rep(0,91),
-                      fire_prob = rep(NA,91), # Fire probability, binary (High/Low)
-                      fire_sev = rep(NA,91), # Fire severity, (Low, Moderate, Severe)
-                      fire_occurs = rep(NA,91), # Fire occurs, binary (Y/N)
-                      impact = rep("climate", 91),
-                      climate = rep("BAU", 91))
+                      fire_prob = rep(NA,years), # Fire probability, binary (High/Low)
+                      fire_sev = rep(NA,years), # Fire severity, (Low, Moderate, Severe)
+                      impact = rep(impact, years),
+                      climate = rep(climate, years))
 
 combined[,3] = round(r_0*combined$btl_r_coef,2)
 combined[1,4] = btl_pop_0
@@ -251,17 +255,12 @@ combined[1,19] = sum(combined[1,14:18])
 combined[1,20] = 256876
 combined[1,21] = ifelse(clim_BAU$Su_tmax[1] >36 && clim_BAU$W_tmin[1] > 2, "H", "L") 
 combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_snow[1] >=60, "Mod", "Sev")) 
-combined[1,23] = ifelse(combined$fire_prob[1] == "H" && combined$fire_sev[1] == "Mod" |
-                          combined$fire_sev[1] == "Sev", "Y", "N")
-combined[1,24] = 0 
-combined[1,25] = 256876
+
 
 for(i in 2:years){
 ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
-combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_sev[i] == "Mod"
-                                 |combined$fire_sev[i] == "Sev", "Y", "N")
 
 ################################################# Beetles ######################
 
@@ -277,30 +276,54 @@ combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_s
   combined$p_p3[i] = combined$p_p3[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i]) # This calculates a survival value based on the size of the beetle population. As the beetle pop grows, survival decreases. 
   combined$p_p4[i] = combined$p_p4[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i])
   
-  pine = whitePine_matrix_model(fertility = pine_fert,
+  pine_fire = whitePine_matrix_FIREmodel(fertility = pine_fert,
                                 survival = pine_surv,
                                 growth = pine_growth,
+                                fire_prob = fire_prob,
+                                fire_sev = fire_sev,
                                 time = 2,
                                 initial_pop = ntrees_0)
   
-  pine_pop = pine[[1]]
+  pine_pop = pine_fire[[1]]
   combined[i,14:18] = pine_pop[,2]
   combined[i,19] = sum(combined[i,14:18])
   
-  frst_crbn = pine[[4]]
+  frst_crbn = pine_fire[[4]]
   combined[i,20] = frst_crbn[2]
   
 }
 
+#Scenario specific vector
 beetle = combined$forest_carbon
-beetle_fire = combined$post_fire_carbon #to plot with others
+
+#Add to overarching dataframe
+scenario_df = rbind.data.frame(scenario_df, combined)
 
 ```
 
 # Effected by both
 ```{r climate_beetle}
+years = 91 # Total length of time
+time = 2 # Number of timesteps used in for loop. 1 for the [i-1] and 2 for [i]
+impact = "climate_beetles"
+climate = "BAU"
+
+ntrees_0 = 1000
+clim_df = clim_BAU
+initial_carbon = 256876
+stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm")
+
+r_0 = 1.16 # Initial r_max value for beetles
+btl_pop_0 = 5000 # Initial size of beetle population
+K_0 = 100000 # Starting carrying capacity for beetles
+beetle_parms = list(p0=btl_pop_0, r=r_0, K=K_0) # list of beetle model input parameters
+
 clim_coef = clim_BAU$cwd[1]/clim_BAU$cwd
+
+pine_fert = c(F0,F1,F2,F3,F4)
 pine_surv = c(p0,p1,p2,p3,p4)
+pine_growth = c(g01,g12,g23,g34)
+
 
 combined = data.frame(year = 2010:2100,
                        btl_r_coef = ifelse((log(sqrt(abs(clim_BAU$W_tmin[1]-clim_BAU$W_tmin)),10)+1)<1,1,
@@ -323,31 +346,26 @@ combined = data.frame(year = 2010:2100,
                       pine4 = rep(NA,91),
                       total_pine = rep(NA,91),
                       forest_carbon = rep(NA,91),
-                      fire_prob = rep(NA,91), # Fire probability, binary (High/Low)
-                      fire_sev = rep(NA,91), # Fire severity, (Low, Moderate, Severe)
-                      fire_occurs = rep(NA,91), # Fire occurs, binary (Y/N)
-                      impact = rep("climate", 91),
-                      climate = rep("BAU", 91))
+                      fire_prob = rep(NA,years), # Fire probability, binary (High/Low)
+                      fire_sev = rep(NA,years), # Fire severity, (Low, Moderate, Severe)
+                      impact = rep(impact, years),
+                      climate = rep(climate, years))
 
 combined[,3] = round(r_0*combined$btl_r_coef,2)
 combined[1,4] = btl_pop_0
 combined[1,5:9] = pine_surv
 combined[1,14:18] = c(107,77,300,14,1)
 combined[1,19] = sum(combined[1,14:18])
-combined[1,20] = 256876
+combined[1,20] = initial_carbon
 combined[1,21] = ifelse(clim_BAU$Su_tmax[1] >36 && clim_BAU$W_tmin[1] > 2, "H", "L") 
 combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_snow[1] >=60, "Mod", "Sev")) 
-combined[1,23] = ifelse(combined$fire_prob[1] == "H" && combined$fire_sev[1] == "Mod" |
-                          combined$fire_sev[1] == "Sev", "Y", "N")
-combined[1,24] = 0 
-combined[1,25] = 256876
+
 
 for(i in 2:years){
   ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
-combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_sev[i] == "Mod"
-                                 |combined$fire_sev[i] == "Sev", "Y", "N")
+
 
 ################################################# Beetles ######################
 
@@ -364,30 +382,28 @@ combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_s
   combined$p_p3[i] = combined$p_p3[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i])
   combined$p_p4[i] = combined$p_p4[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i])
   
-  pine = whitePine_matrix_model(fertility = pine_fert,
+  pine_fire = whitePine_matrix_FIREmodel(fertility = pine_fert,
                                 survival = pine_surv,
                                 growth = pine_growth,
+                                fire_prob = fire_prob,
+                                fire_sev = fire_sev,
                                 time=2,
                                 initial_pop = ntrees_0)
   
-  pine_pop = pine[[1]]
+  pine_pop = pine_fire[[1]]
   combined[i,14:18] = pine_pop[,2]
   combined[i,19] = sum(combined[i,14:18])
   
-  frst_crbn = pine[[4]]
+  frst_crbn = pine_fire[[4]]
   combined[i,20] = frst_crbn[2]
 
-  pine_biomass = pine[[3]] # Pull out biomass across stages
-  combined$burnt_biomass[i] = ifelse(combined$fire_occurs[i] == "Y" && 
-                                    combined$fire_sev[i] == "Low", (sum(pine_biomass[1:3,2])*.3),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Mod", (sum(pine_biomass[1:4,2])*.51),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Sev", (sum(pine_biomass[1:5,2])*.8),
-                      0)))
-  combined$post_fire_carbon[i] = combined$forest_carbon[i] - (combined$burnt_biomass[i] * 0.47)  
 }
 
+#Scenario specific vector
 climate_and_beetle = combined$forest_carbon
-climate_and_beetle_fire = combined$post_fire_carbon #to plot with others
+
+#Add to overarching dataframe
+scenario_df = rbind.data.frame(scenario_df, combined)
 
 ```
 
@@ -396,10 +412,7 @@ climate_and_beetle_fire = combined$post_fire_carbon #to plot with others
 BAU_forest_carbon_df = cbind.data.frame(year = 2010:2100,
                                   beetle=beetle,
                                   climate=climate,
-                                  climate_and_beetle=climate_and_beetle,
-                                  beetle_fire,
-                                  climate_fire,
-                                  climate_and_beetle_fire) %>% 
+                                  climate_and_beetle=climate_and_beetle) %>% 
  # filter(year != "2010"&year !="2011") %>% # weird things happening in these years. Excluding because not important to trends
    melt(1)
 
@@ -425,6 +438,7 @@ clim_moderate = data.frame(year = 2010:2100,
                       Sp_tmin = rep(NA,91),
                       Su_tmax = rep(NA,91))
 
+
 # Fill in climate data table
 clim_parms = list(total_change=-20,time=years)
 clim_moderate$apr_snow = climate_variables_fun(snwpck_raw,crop_layer = crop_layer,parms = clim_parms)
@@ -449,13 +463,23 @@ clim_moderate$Su_tmax = climate_variables_fun(Su_tmax_raw,crop_layer = crop_laye
 # Only effected by climate
 ```{r climate}
 years = 91
+time = 2
+impact = "climate"
+climate = "moderate"
+
+ntrees_0 = 1000
+clim_df = clim_moderate
+initial_carbon = 256876
+stages = c("a","b","c","d","e")
+#stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm")
+
+  
 r_0 = 1.16
 btl_pop_0 = 5000
-ntrees_0 = 1000
-time = 2
 K_0 = 100000
-
 beetle_parms = list(p0=btl_pop_0, r=r_0, K=K_0)
+
+clim_coef = clim_moderate$cwd[1]/clim_moderate$cwd
 
 # Fecundity
 F0 = 0 
@@ -483,8 +507,7 @@ g34 = 0.0144
 # Growth vector to put into matrix
 pine_growth = c(g01,g12,g23,g34)
 
-stages = c("a","b","c","d","e")
-clim_coef = clim_moderate$cwd[1]/clim_moderate$cwd
+
 
 combined = data.frame(year = 2010:2100,
                       btl_r_coef = ifelse((log(sqrt(abs(clim_BAU$W_tmin[1]-clim_BAU$W_tmin)),10)+1)<1,1,
@@ -507,31 +530,26 @@ combined = data.frame(year = 2010:2100,
                       pine4 = rep(NA,91),
                       total_pine = rep(0,91),
                       forest_carbon = rep(0,91),
-                      fire_prob = rep(NA,91), # Fire probability, binary (High/Low)
-                      fire_sev = rep(NA,91), # Fire severity, (Low, Moderate, Severe)
-                      fire_occurs = rep(NA,91), # Fire occurs, binary (Y/N)
-                      impact = rep("climate", 91),
-                      climate = rep("BAU", 91))
+                      fire_prob = rep(NA,years), # Fire probability, binary (High/Low)
+                      fire_sev = rep(NA,years), # Fire severity, (Low, Moderate, Severe)
+                      impact = rep(impact, years),
+                      climate = rep(climate, years))
 
 combined[,3] = round(r_0*combined$btl_r_coef,2)
 combined[1,4] = btl_pop_0
 combined[1,5:9] = pine_surv
 combined[1,14:18] = c(107,77,300,14,1)
 combined[1,19] = sum(combined[1,14:18])
-combined[1,20] = 256876
+combined[1,20] = initial_carbon
 combined[1,21] = ifelse(clim_BAU$Su_tmax[1] >36 && clim_BAU$W_tmin[1] > 2, "H", "L") 
 combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_snow[1] >=60, "Mod", "Sev")) 
-combined[1,23] = ifelse(combined$fire_prob[1] == "H" && combined$fire_sev[1] == "Mod" |
-                          combined$fire_sev[1] == "Sev", "Y", "N")
-combined[1,24] = 0 
-combined[1,25] = 256876
+
 
 for(i in 2:years){
 ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
-combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_sev[i] == "Mod"
-                                 |combined$fire_sev[i] == "Sev", "Y", "N")
+
 
 ################################################# Beetles ######################
 
@@ -547,30 +565,28 @@ combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_s
   # combined$p_p3[i] = p3 # No beetle impact
   # combined$p_p4[i] = p4 # No beetle impact
   
-  pine = whitePine_matrix_model(fertility = pine_fert,
+  pine_fire = whitePine_matrix_FIREmodel(fertility = pine_fert,
                                 survival = pine_surv,
                                 growth = pine_growth,
+                                fire_prob = fire_prob,
+                                fire_sev = fire_sev,
                                 time=2,
                                 initial_pop = ntrees_0)
   
-  pine_pop = pine[[1]]
+  pine_pop = pine_fire[[1]]
   combined[i,14:18] = pine_pop[,2]
   combined[i,19] = sum(combined[i,14:18])
   
-  frst_crbn = pine[[4]]
+  frst_crbn = pine_fire[[4]]
   combined[i,20] = frst_crbn[2]
   
-  pine_biomass = pine[[3]] # Pull out biomass across stages
-  combined$burnt_biomass[i] = ifelse(combined$fire_occurs[i] == "Y" && 
-                                    combined$fire_sev[i] == "Low", (sum(pine_biomass[1:3,2])*.3),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Mod", (sum(pine_biomass[1:4,2])*.51),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Sev", (sum(pine_biomass[1:5,2])*.8),
-                      0)))
-  combined$post_fire_carbon[i] = combined$forest_carbon[i] - (combined$burnt_biomass[i] * 0.47)
 }
 
+#Scenario specific vector
 mod_climate = combined$forest_carbon
-mod_climate_fire = combined$post_fire_carbon #to plot with others
+
+#Add to overarching dataframe
+scenario_df = rbind.data.frame(scenario_df, combined)
 
 ```
 
@@ -578,19 +594,24 @@ mod_climate_fire = combined$post_fire_carbon #to plot with others
 ```{r beetle}
 
 years = 91
+time = 2
+impact = "beetles"
+climate = "moderate"
+
+ntrees_0 = 1000
+clim_df = clim_moderate
+initial_carbon = 256876
+
 r_0 = 1.16
 btl_pop_0 = 5000
-ntrees_0 = 1000
-time = 2
 K_0 = 100000
-
 beetle_parms = list(p0=btl_pop_0, r=r_0, K=K_0)
 
 clim_coef = 1 # Equal to one becuase no climate impact here
 
 pine_fert = c(F0,F1,F2,F3,F4)
-pine_growth = c(g01,g12,g23,g34)
 pine_surv = c(p0,p1,p2,p3,p4)
+pine_growth = c(g01,g12,g23,g34)
 
 combined = data.frame(year = 2010:2100,
                       btl_r_coef = ifelse((log(sqrt(abs(clim_BAU$W_tmin[1]-clim_BAU$W_tmin)),10)+1)<1,1,
@@ -613,31 +634,26 @@ combined = data.frame(year = 2010:2100,
                       pine4 = rep(NA,91),
                       total_pine = rep(0,91),
                       forest_carbon = rep(0,91),
-                      fire_prob = rep(NA,91), # Fire probability, binary (High/Low)
-                      fire_sev = rep(NA,91), # Fire severity, (Low, Moderate, Severe)
-                      fire_occurs = rep(NA,91), # Fire occurs, binary (Y/N)
-                      impact = rep("climate", 91),
-                      climate = rep("BAU", 91))
+                      fire_prob = rep(NA,years), # Fire probability, binary (High/Low)
+                      fire_sev = rep(NA,years), # Fire severity, (Low, Moderate, Severe)
+                      impact = rep(impact, years),
+                      climate = rep(climate, years))
 
 combined[,3] = round(r_0*combined$btl_r_coef,2)
 combined[1,4] = btl_pop_0
 combined[1,5:9] = pine_surv
 combined[1,14:18] = c(107,77,300,14,1)
 combined[1,19] = sum(combined[1,14:18])
-combined[1,20] = 256876
+combined[1,20] = initial_carbon
 combined[1,21] = ifelse(clim_BAU$Su_tmax[1] >36 && clim_BAU$W_tmin[1] > 2, "H", "L") 
 combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_snow[1] >=60, "Mod", "Sev")) 
-combined[1,23] = ifelse(combined$fire_prob[1] == "H" && combined$fire_sev[1] == "Mod" |
-                          combined$fire_sev[1] == "Sev", "Y", "N")
-combined[1,24] = 0 
-combined[1,25] = 256876
+
 
 for(i in 2:years){
 ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
-combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_sev[i] == "Mod"
-                                 |combined$fire_sev[i] == "Sev", "Y", "N")
+
 
 ################################################# Beetles ######################
 
@@ -653,35 +669,48 @@ combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_s
   combined$p_p3[i] = combined$p_p3[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i])
   combined$p_p4[i] = combined$p_p4[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i])
   
-  pine = whitePine_matrix_model(fertility = pine_fert,
+  pine_fire = whitePine_matrix_FIREmodel(fertility = pine_fert,
                                 survival = pine_surv,
+                                fire_prob = fire_prob,
+                                fire_sev = fire_sev,
                                 growth = pine_growth,
                                 time = 2,
                                 initial_pop = ntrees_0)
   
-  pine_pop = pine[[1]]
+  pine_pop = pine_fire[[1]]
   combined[i,14:18] = pine_pop[,2]
   combined[i,19] = sum(combined[i,14:18])
   
-  frst_crbn = pine[[4]]
+  frst_crbn = pine_fire[[4]]
   combined[i,20] = frst_crbn[2]
   
-  pine_biomass = pine[[3]] # Pull out biomass across stages
-  combined$burnt_biomass[i] = ifelse(combined$fire_occurs[i] == "Y" && 
-                                    combined$fire_sev[i] == "Low", (sum(pine_biomass[1:3,2])*.3),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Mod", (sum(pine_biomass[1:4,2])*.51),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Sev", (sum(pine_biomass[1:5,2])*.8),
-                      0)))
-  combined$post_fire_carbon[i] = combined$forest_carbon[i] - (combined$burnt_biomass[i] * 0.47)
 }
 
+#Scenario specific vector
 mod_beetle = combined$forest_carbon
-mod_beetle_fire = combined$post_fire_carbon #to plot with others
+
+#Add to overarching dataframe
+scenario_df = rbind.data.frame(scenario_df, combined)
 
 ```
 
 # Effected by both
 ```{r climate_beetle}
+
+years = 91
+time = 2
+impact = "climate_beetle"
+climate = "moderate"
+
+ntrees_0 = 1000
+clim_df = clim_moderate
+initial_carbon = 256876
+
+r_0 = 1.16 # Initial r_max value for beetles
+btl_pop_0 = 5000 # Initial size of beetle population
+K_0 = 100000 # Starting carrying capacity for beetles
+beetle_parms = list(p0=btl_pop_0, r=r_0, K=K_0) # list of beetle model input parameters
+
 clim_coef = clim_moderate$cwd[1]/clim_moderate$cwd
 pine_surv = c(p0,p1,p2,p3,p4)
 
@@ -706,31 +735,26 @@ combined = data.frame(year = 2010:2100,
                       pine4 = rep(NA,91),
                       total_pine = rep(NA,91),
                       forest_carbon = rep(NA,91),
-                      fire_prob = rep(NA,91), # Fire probability, binary (High/Low)
-                      fire_sev = rep(NA,91), # Fire severity, (Low, Moderate, Severe)
-                      fire_occurs = rep(NA,91), # Fire occurs, binary (Y/N)
-                      impact = rep("climate", 91),
-                      climate = rep("BAU", 91))
+                      fire_prob = rep(NA,years), # Fire probability, binary (High/Low)
+                      fire_sev = rep(NA,years), # Fire severity, (Low, Moderate, Severe)
+                      impact = rep(impact, years),
+                      climate = rep(climate, years))
 
 combined[,3] = round(r_0*combined$btl_r_coef,2)
 combined[1,4] = btl_pop_0
 combined[1,5:9] = pine_surv
 combined[1,14:18] = c(107,77,300,14,1)
 combined[1,19] = sum(combined[1,14:18])
-combined[1,20] = 256876
+combined[1,20] = initial_carbon
 combined[1,21] = ifelse(clim_BAU$Su_tmax[1] >36 && clim_BAU$W_tmin[1] > 2, "H", "L") 
 combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_snow[1] >=60, "Mod", "Sev")) 
-combined[1,23] = ifelse(combined$fire_prob[1] == "H" && combined$fire_sev[1] == "Mod" |
-                          combined$fire_sev[1] == "Sev", "Y", "N")
-combined[1,24] = 0 
-combined[1,25] = 256876
+
 
 for(i in 2:years){
 ################################################# Fire ######################
 combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
 combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
-combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_sev[i] == "Mod"
-                                 |combined$fire_sev[i] == "Sev", "Y", "N")
+
 
 ################################################# Beetles ######################
 
@@ -747,30 +771,28 @@ combined$fire_occurs[i] = ifelse(combined$fire_prob[i] == "H" && combined$fire_s
   combined$p_p3[i] = combined$p_p3[1]*log(sqrt(combined$btl_pop[1]))/log(sqrt(combined$btl_pop[i]))
   combined$p_p4[i] = combined$p_p4[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i])
   
-  pine = whitePine_matrix_model(fertility = pine_fert,
+  pine_fire = whitePine_matrix_FIREmodel(fertility = pine_fert,
                                 survival = pine_surv,
                                 growth = pine_growth,
+                                fire_prob = fire_prob,
+                                fire_sev = fire_sev,
                                 time=2,
                                 initial_pop = ntrees_0)
   
-  pine_pop = pine[[1]]
+  pine_pop = pine_fire[[1]]
   combined[i,14:18] = pine_pop[,2]
   combined[i,19] = sum(combined[i,14:18])
   
-  frst_crbn = pine[[4]]
+  frst_crbn = pine_fire[[4]]
   combined[i,20] = frst_crbn[2]
   
-  pine_biomass = pine[[3]] # Pull out biomass across stages
-  combined$burnt_biomass[i] = ifelse(combined$fire_occurs[i] == "Y" && 
-                                    combined$fire_sev[i] == "Low", (sum(pine_biomass[1:3,2])*.3),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Mod", (sum(pine_biomass[1:4,2])*.51),
-                  ifelse(combined$fire_occurs[i] == "Y" && combined$fire_sev[i] == "Sev", (sum(pine_biomass[1:5,2])*.8),
-                      0)))
-  combined$post_fire_carbon[i] = combined$forest_carbon[i] - (combined$burnt_biomass[i] * 0.47)
 }
 
+#Scenario specific vector
 mod_climate_and_beetle = combined$forest_carbon
-mod_climate_and_beetle_fire = combined$post_fire_carbon #to plot with others
+
+#Add to overarching dataframe
+scenario_df = rbind.data.frame(scenario_df, combined)
 
 ```
 
@@ -779,10 +801,7 @@ mod_climate_and_beetle_fire = combined$post_fire_carbon #to plot with others
 mod_forest_carbon_df = cbind.data.frame(year = 2010:2100,
                                         beetle=beetle,
                                         climate=climate,
-                                        climate_and_beetle=climate_and_beetle,
-                                        beetle_fire,
-                                        climate_fire,
-                                        climate_and_beetle_fire) %>% 
+                                        climate_and_beetle=climate_and_beetle) %>% 
  # filter(year != "2010"&year !="2011") %>% # weird things happening in these years. Excluding because not important to trends
    melt(1)
 
@@ -795,4 +814,16 @@ bau_trends
 moderate_trends
 ```
 
+##Graphs
+```{r}
+
+ggplot(scenario_df %>% filter(climate == "BAU"), 
+       aes(x = year, y = forest_carbon, by = impact, color = impact))+
+  geom_line()
+
+ggplot(scenario_df %>% filter(climate == "moderate"), 
+       aes(x = year, y = forest_carbon, by = impact, color = impact))+
+  geom_line()
+
+```
 
