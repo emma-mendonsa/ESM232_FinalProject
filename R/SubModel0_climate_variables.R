@@ -3,11 +3,6 @@
 #'
 #'
 #'
-#'
-#'
-#'
-#'
-#'
 
 climate_variables_fun = function(raster,crop_layer,parms){
   

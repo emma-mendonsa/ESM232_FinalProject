@@ -4,10 +4,6 @@
 #'
 #'
 #'
-#'
-#'
-#'
-#'
 
 whitePine_matrix_FIREmodel = function(fertility, survival, growth, 
                                   initial_pop, fire_prob, fire_sev, time, carbon_coeff = 0.47) {

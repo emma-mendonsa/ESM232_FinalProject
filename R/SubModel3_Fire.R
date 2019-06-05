@@ -1,13 +1,6 @@
 #' Add in params and other info
 #'
 #'
-#'
-#'
-#'
-#'
-#'
-#'
-#'
 
 burnt_biomass_model = function(pine_biomass, fire_prob, fire_sev, 
                                forest_carbon, time = 1, carbon_coeff = 0.47) {
@@ -25,5 +18,6 @@ burnt_biomass_model = function(pine_biomass, fire_prob, fire_sev,
   return(list(burnt_biomass, post_fire_carbon))
 
 }
+
 
 
