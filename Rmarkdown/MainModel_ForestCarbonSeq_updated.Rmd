@@ -273,7 +273,7 @@ combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU
   pine_surv = as.numeric(combined[i-1,5:9])
   pine_growth = as.numeric(combined[i-1,10:13])
   init_pop = as.numeric(combined[i-1,14:18])
-  combined$p_p3[i] = combined$p_p3[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i]) # This calculates a survival value based on the size of the beetle population. As the beetle pop grows, survival decreases. 
+  combined$p_p3[i] = combined$p_p3[i-1]*log(combined$btl_pop[1])/log(combined$btl_pop[i]) # This calculates a survival value based on the size of the beetle population. As the beetle pop grows, survival decreases. 
   combined$p_p4[i] = combined$p_p4[1]*log(combined$btl_pop[1])/log(combined$btl_pop[i])
   
   pine_fire = whitePine_matrix_FIREmodel(fertility = pine_fert,
