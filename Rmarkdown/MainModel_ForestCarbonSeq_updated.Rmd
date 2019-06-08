@@ -21,7 +21,10 @@ library(deSolve)
 
 source("../R/SubModel0_climate_variables.R")
 source("../R/SubModel1_BarkBeetles.R")
+source("../R/SubModel2_PineModel.R")
+source("../R/SubModel3_Fire.R")
 source("../R/SubModel4_PineModel-Fire_combo.R")
+source("../R/Submodel5_calc_biomass_carbon.R")
 
 options(scipen = 999)
 ```
@@ -32,8 +35,6 @@ options(scipen = 999)
 cwd_raw = raster("../climate_data/cwd1981_2010_ave_HST_1559416632/cwd1981_2010_ave_HST_1559416632.tif")
 snwpck_raw = raster("../climate_data/aprpck1981_2010_ave_HST_1559416720/aprpck1981_2010_ave_HST_1559416720.tif")
 W_tmin_raw = raster("../climate_data/tmn1981_2010djf_ave_HST_1559415579/tmn1981_2010djf_ave_HST_1559415579.tif")
-Sp_tmin_raw = raster("../climate_data/tmn1981_2010mar_ave_HST_1559415612/tmn1981_2010mar_ave_HST_1559415612.tif")
-F_tmin_raw = raster("../climate_data/tmn1981_2010nov_ave_HST_1559415731/tmn1981_2010nov_ave_HST_1559415731.tif")
 Su_tmax_raw = raster("../climate_data/tmx1981_2010jja_ave_HST_1559415851/tmx1981_2010jja_ave_HST_1559415851.tif")
 crop_layer = readOGR("../climate_data/SNC_Boundary_Shapefile/SNC_Boundary.shp")
 ```
@@ -52,12 +53,6 @@ clim_BAU$apr_snow = climate_variables_fun(snwpck_raw,crop_layer = crop_layer,par
 
 clim_parms = list(total_change=400,time=years)
 clim_BAU$cwd = climate_variables_fun(cwd_raw,crop_layer = crop_layer,parms = clim_parms)
-
-clim_parms = list(total_change=10,time=years)
-clim_BAU$F_tmin = climate_variables_fun(F_tmin_raw,crop_layer = crop_layer,parms = clim_parms)
-
-clim_parms = list(total_change=10,time=years)
-clim_BAU$Sp_tmin = climate_variables_fun(Sp_tmin_raw,crop_layer = crop_layer,parms = clim_parms)
 
 clim_parms = list(total_change=10,time=years)
 clim_BAU$W_tmin = climate_variables_fun(W_tmin_raw,crop_layer = crop_layer,parms = clim_parms)
@@ -135,9 +130,10 @@ combined = data.frame(year = 2010:2100,
                       pine3 = rep(NA,years), # Number of pines in stage 3
                       pine4 = rep(NA,years), # Number of pines in stage 4
                       total_pine = rep(0,years), # Total pine population
-                      forest_carbon = rep(0,years), # Total forest carbon, calculated more above ground biomass. 
+                      preFire_forest_carbon = rep(0,years), # Total forest carbon, calculated more above ground biomass. 
                       fire_prob = rep(NA,years), # Fire probability, binary (High/Low)
                       fire_sev = rep(NA,years), # Fire severity, (Low, Moderate, Severe)
+                      postFire_forest_carbon = rep(0,years),
                       impact = rep(impact, years),
                       climate = rep(climate, years))
 
@@ -151,14 +147,10 @@ combined[1,21] = ifelse(clim_BAU$Su_tmax[1] >36 && clim_BAU$W_tmin[1] > 2, "H", 
 combined[1,22] = ifelse(clim_BAU$apr_snow[1] >=80, "Low", ifelse(clim_BAU$apr_snow[1] >=60, "Mod", "Sev")) # Initial severity of fire
 
 for(i in 2:years){
-
-################################################# Fire ######################
-  combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
-  combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
   
 ################################################# Beetles ######################
 
-  tmp = data.frame(time = 1:time) # Temp. data.frame for beetle output. 
+  tmp = data.frame(time = 1:time) # Temporary data.frame for beetle output. 
   Ki = K_0*combined$total_pine[i-1]/combined$total_pine[1]
   beetle_parms = list(p0=btl_pop_0, r=r_0, K=Ki)
   tmp_result = ode(combined$btl_pop[i-1], tmp$time, beetle_pop, beetle_parms) # ODE solver to determine beetle pop size in time 2
@@ -172,25 +164,37 @@ for(i in 2:years){
   combined$p_p3[i] = p3 # No beetle impact
   combined$p_p4[i] = p4 # No beetle impact
   
-  fire_prob = combined[i,21] # Fire probability in current time step
-  fire_sev = combined[i,22] # Fire severity in current time step
-  
   # Implement whitepine matrix model. C
-  pine_fire = whitePine_matrix_FIREmodel(fertility = pine_fert,
+  pine = whitePine_matrix_model(fertility = pine_fert,
                                 survival = pine_surv,
                                 growth = pine_growth,
-                                fire_prob = fire_prob,
-                                fire_sev = fire_sev,
                                 time=2,
                                 initial_pop = ntrees_0) 
   
-  pine_pop = pine_fire[[1]] # Pull out pop structure
-  combined[i,14:18] = pine_pop[,2] # Put into main output dataframe
-  combined[i,19] = sum(combined[i,14:18]) # Sum for the total pop size
+  combined[i,14:18] = pine$pop_structure[,2] # Put pop structure into main output dataframe
+  combined[i,19] = pine$total_pop[2] # Put total pop into main output dataframe
   
-  frst_crbn = pine_fire[[4]] # Pull out forest carbon 
-  combined[i,20] = frst_crbn[2] # Put into main output data.frame. 
 
+  ################################################ Pre-fire forest carbon #####
+  
+  avg_stage_dbh = c(1,5,15,30,50)
+  frst_crbn = calc_biomass_carbon(avg_stage_dbh = avg_stage_dbh, pop_structure = as.numeric(combined[i,14:18]))
+  combined[i,20] = frst_crbn[2] # Put into main output data.frame. 
+  
+  ################################################# Fire ######################
+  
+  combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
+  combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
+
+  fire = burnt_biomass_model(initial_pop = as.numeric(combined[i,14:18]),
+                             pine_biomass = frst_crbn$total_biomass,
+                             fire_prob = combined$fire_prob[i],
+                             fire_sev = combined$fire_sev[i],
+                             forest_carbon = frst_crbn$total_carbon)
+  
+  combined[i,14:18] = fire$postFire_pop
+  combined$postFire_forest_carbon = fire$post_fire_carbon
+  
 }
 
 #Scenario specific vector

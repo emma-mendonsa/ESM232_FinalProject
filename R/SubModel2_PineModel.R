@@ -58,23 +58,7 @@ whitePine_matrix_model = function(fertility, survival, growth,
     total_pop[i]=round(sum(pop_structure[,i]),0)
   }
     
-  # biomass eq from Jenkins et al. 
-  biomass = as.data.frame(matrix(nrow=nstages, ncol=time))
-  
-  avg_dbh = c(1,5,15,30,50)
-  
-  for(i in 1:length(avg_dbh)){
-    for(j in 1:time){
-      biomass[,j] = pop_structure[,j]*exp(-2.5356 + 2.2595*log(avg_dbh[i]))
-    }
-  }
-  
-  total_carbon = rep(0, times=time)
-  for (i in 1:time) {
-    total_carbon[i]=sum(biomass[,i])*carbon_coeff
-  }
-  
   lambda = popbio::lambda(whitePine_matrix)
   
-  return(list(pop_structure,total_pop,biomass,total_carbon,lambda))
+  return(list(pop_structure=pop_structure,total_pop=total_pop,lambda=lambda))
 }
