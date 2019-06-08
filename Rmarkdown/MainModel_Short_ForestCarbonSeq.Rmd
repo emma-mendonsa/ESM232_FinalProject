@@ -111,6 +111,7 @@ g34 = 0.0144
 # Pine Growth vector to put into matrix
 pine_growth = c(g01,g12,g23,g34)
 
+
 stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm")
 clim_coef = clim_BAU$cwd[1]/clim_BAU$cwd
 btl_coef = log(sqrt(abs(clim_BAU$W_tmin[1]-clim_BAU$W_tmin)),10)+1
