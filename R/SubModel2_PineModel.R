@@ -9,7 +9,7 @@
 #'
 #'
 
-whitePine_matrix_model = function(fertility, survival, growth, 
+whitePine_matrix_model = function(stages, fertility, survival, growth, 
                                   initial_pop, time, carbon_coeff = 0.47) {
   
   nstages = length(fertility)
@@ -40,7 +40,6 @@ whitePine_matrix_model = function(fertility, survival, growth,
   } 
   
   stable_stage = as.numeric(stable.stage(whitePine_matrix))
-  P0 = c(initial_pop*stable_stage[1],initial_pop*stable_stage[2],initial_pop*stable_stage[3],initial_pop*stable_stage[4],initial_pop*stable_stage[5])
   
   # Matrix to store population structure through time with a row for each age and column for each time step
   pop_structure = as.data.frame(matrix(nrow=nstages, ncol=time))
@@ -48,7 +47,7 @@ whitePine_matrix_model = function(fertility, survival, growth,
   colnames(pop_structure) = 1:ncol(pop_structure)
   
   # Add the initial population structure into the first column 
-  pop_structure[,1] = P0
+  pop_structure[,1] = initial_pop
   
   # Create a vector to fill to be filled in with total population size
   total_pop = rep(0, times=time)
