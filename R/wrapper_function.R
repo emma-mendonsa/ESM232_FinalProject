@@ -3,7 +3,7 @@
 #' 
 #' 
 
-whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenario_parms,pine_parms,beetle_parms){
+whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenario_parms,pine_parms,beetle_parms,btl_K0){
   
   if(impact_type=="climate_only"){
   
@@ -55,7 +55,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
     
     # Update beetle carrying capacity based on size of pine population in previous and initial time step. 
     # This causes carrying capacity to change proportionally with the size of the forest
-    Ki = ifelse(output_df$total_pine[i-1]>0,beetle_parms$K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1],0)
+    Ki = ifelse(output_df$total_pine[i-1]>0,K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1],0)
     
     # Reset beetle parameters with new rmax and carrying capacity
     beetle_parms = list(btl_pop_0=beetle_parms$btl_pop_0, 
@@ -63,8 +63,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
                         K_0_btl=Ki)
     
     tmp_result = ode(beetle_parms$btl_pop_0, tmp$time, beetle_pop, beetle_parms) # ODE solver to determine beetle pop size in time 2
-    
-    output_df$btl_pop[i] = tmp_result[2,2] # Put ODE results into main 'output_df' table
+    output_df$btl_pop[i] = round(tmp_result[2,2],0)  # Put ODE results into main 'output_df' table
     
     ################################### Pines #######################################
     
@@ -110,7 +109,6 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
     if(impact_type=="beetles_only"){
       
       clim_coef = 1
-      
       years = nrow(clim_df)
       
       output_df = data.frame(year = clim_df$year, 
@@ -157,7 +155,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
         
         # Update beetle carrying capacity based on size of pine population in previous and initial time step. 
         # This causes carrying capacity to change proportionally with the size of the forest
-        Ki = ifelse(output_df$total_pine[i-1]>0,beetle_parms$K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1],0)
+        Ki = ifelse(output_df$total_pine[i-1]>0,K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1],0)
         
         # Reset beetle parameters with new rmax and carrying capacity
         beetle_parms = list(btl_pop_0=beetle_parms$btl_pop_0, 
@@ -165,16 +163,15 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
                             K_0_btl=Ki)
         
         tmp_result = ode(beetle_parms$btl_pop_0, tmp$time, beetle_pop, beetle_parms) # ODE solver to determine beetle pop size in time 2
-        
-        output_df$btl_pop[i] = tmp_result[2,2] # Put ODE results into main 'output_df' table
+        output_df$btl_pop[i] = round(tmp_result[2,2],0)  # Put ODE results into main 'output_df' table
         
         ################################### Pines #######################################
         
         pine_surv = as.numeric(output_df[i-1,5:9]) # Pine survival vector in a given time step
         pine_growth = as.numeric(output_df[i-1,10:13]) # Pine growth vector for a given time step
         init_pop = as.numeric(output_df[i-1,14:18]) # Initial population size, relative to each time step. 
-        output_df$p_p3[i] = output_df$p_p3[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]) # beetle impact
-        output_df$p_p4[i] = output_df$p_p4[1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]) # beetle impact
+        output_df$p_p3[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p3[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p3[i-1]) # beetle impact
+        output_df$p_p4[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p4[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p4[i-1]) # beetle impact
         
         # Implement whitebark pine matrix model
         pine = whitePine_matrix_model(stages = pine_parms$stages,
@@ -260,7 +257,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
         
         # Update beetle carrying capacity based on size of pine population in previous and initial time step. 
         # This causes carrying capacity to change proportionally with the size of the forest
-        Ki = ifelse(output_df$total_pine[i-1]>0,beetle_parms$K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1],0)
+        Ki = ifelse(output_df$total_pine[i-1]>0,K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1],0)
         
         # Reset beetle parameters with new rmax and carrying capacity
         beetle_parms = list(btl_pop_0=beetle_parms$btl_pop_0, 
@@ -268,16 +265,15 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
                             K_0_btl=Ki)
         
         tmp_result = ode(beetle_parms$btl_pop_0, tmp$time, beetle_pop, beetle_parms) # ODE solver to determine beetle pop size in time 2
-        
-        output_df$btl_pop[i] = tmp_result[2,2] # Put ODE results into main 'output_df' table
+        output_df$btl_pop[i] = round(tmp_result[2,2],0) # Put ODE results into main 'output_df' table
         
         ################################### Pines #######################################
         
         pine_surv = as.numeric(output_df[i-1,5:9]) # Pine survival vector in a given time step
         pine_growth = as.numeric(output_df[i-1,10:13]) # Pine growth vector for a given time step
         init_pop = as.numeric(output_df[i-1,14:18]) # Initial population size, relative to each time step. 
-        output_df$p_p3[i] = output_df$p_p3[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]) # beetle impact
-        output_df$p_p4[i] = output_df$p_p4[1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]) # beetle impact
+        output_df$p_p3[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p3[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p3[i-1]) # beetle impact
+        output_df$p_p4[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p4[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p4[i-1]) # beetle impact
         
         # Implement whitebark pine matrix model
         pine = whitePine_matrix_model(stages = pine_parms$stages,
