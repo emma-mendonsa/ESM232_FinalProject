@@ -2,8 +2,7 @@
 #'
 #'
 
-burnt_biomass_model = function(initial_pop, pine_biomass, fire_prob, fire_sev, forest_carbon, low_sev = .7, mod_sev = .49, sev_sev = .2, time = 1, carbon_coeff = 0.47) {
-  
+fire_model = function(initial_pop, pine_biomass, fire_prob, fire_sev, forest_carbon, low_sev = .7, mod_sev = .49, sev_sev = .2, time = 1, carbon_coeff = 0.47) {
   
   postFire_pop = ifelse(fire_prob =="L", list(c(initial_pop[1],
                                  initial_pop[2],
@@ -25,12 +24,18 @@ burnt_biomass_model = function(initial_pop, pine_biomass, fire_prob, fire_sev, f
                               initial_pop[4]*mod_sev,
                               initial_pop[5])),
                             
-                            ifelse(fire_prob == "H" && fire_sev == "Sev", 
+                            ifelse(fire_prob == "H" && fire_sev == "Sev" && pine_biomass > 10000, 
                                    list(c(initial_pop[1]*sev_sev,
                                      initial_pop[2]*sev_sev,
                                      initial_pop[3]*sev_sev,
                                      initial_pop[4]*sev_sev,
-                                     initial_pop[5]*sev_sev)),NA))))
+                                     initial_pop[5]*sev_sev)),
+                                   
+                                   list(c(initial_pop[1],
+                                          initial_pop[2],
+                                          initial_pop[3],
+                                          initial_pop[4],
+                                          initial_pop[5]))))))
   
   
   burnt_biomass = rep(0, times=time)
@@ -44,7 +49,9 @@ burnt_biomass_model = function(initial_pop, pine_biomass, fire_prob, fire_sev, f
   
   post_fire_carbon = forest_carbon - (burnt_biomass * carbon_coeff)
   
-  return(list(postFire_pop = unlist(postFire_pop), burnt_biomass = burnt_biomass, post_fire_carbon = post_fire_carbon))
+  return(list(postFire_pop = unlist(postFire_pop), 
+              burnt_biomass = burnt_biomass, 
+              post_fire_carbon = post_fire_carbon))
 
 }
 

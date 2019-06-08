@@ -61,7 +61,7 @@ clim_BAU$Su_tmax = climate_variables_fun(Su_tmax_raw,crop_layer = crop_layer,par
 # Setting model inputs
 ```{r climate_BAU}
 #### Scenario length and name ####
-impact = "beetles"
+impact_type = "beetles"
 climate = "BAU"
 
 # Pine Fecundity
@@ -85,32 +85,167 @@ g23 = 0.0144
 g34 = 0.0144
 
 scenario_parms = list(years = length(clim_BAU),
-                      clim_coef = clim_BAU$cwd[1]/clim_BAU$cwd,
                       time_step=2)
 
-beetle_parms = list(btl_coef = (log(sqrt(abs(clim_BAU$W_tmin[1]-clim_BAU$W_tmin)),10)+1),
-                    btl_pop_0=5000, 
-                    r_max_0=1.16, 
-                    K_0_btl = 5000)
+beetle_parms = list(btl_pop_0=5000, 
+                    r_max=1.16, 
+                    K_0_btl = 1000)
 
 pine_parms = list(ntrees_0 = 1000,
-                  initial_pop = c(200,200,200,200,200),
+                  initial_pop = c(100,100,50,50,50),
                   initial_carbon = 0,
                   stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm"),
+                  avg_stage_dbh = c(1,5,15,30,50),
                   pine_fert = c(F0,F1,F2,F3,F4),
                   pine_surv = c(p0,p1,p2,p3,p4),
                   pine_growth = c(g01,g12,g23,g34))
 
-a = whitePine_PopDynamics_model(clim_df = clim_BAU,clim_scen_name = "BAU",scenario_parms = scenario_parms,pine_parms = pine_parms,beetle_parms = beetle_parms)
 ```
 
 
 ```{r}
+impact_type = "beetles_only"
+climate_chng_scen = "business-as-usual"
 
+# Pine Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742
+F3 = 0.2536 
+F4 = 1.6902
 
+# Pine Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
 
+# Pine Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+
+scenario_parms = list(years = length(clim_BAU),
+                      time_step=2)
+
+beetle_parms = list(btl_pop_0=5000, 
+                    r_max=1.16, 
+                    K_0_btl = 1000)
+
+pine_parms = list(ntrees_0 = 1000,
+                  initial_pop = c(100,100,50,50,50),
+                  initial_carbon = 0,
+                  stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm"),
+                  avg_stage_dbh = c(1,5,15,30,50),
+                  pine_fert = c(F0,F1,F2,F3,F4),
+                  pine_surv = c(p0,p1,p2,p3,p4),
+                  pine_growth = c(g01,g12,g23,g34))
+
+beetles_only = whitePine_PopDynamics_model(clim_df = clim_BAU,
+                                clim_scen_name = climate_chng_scen,
+                                impact_type = impact_type,
+                                scenario_parms = scenario_parms,
+                                pine_parms = pine_parms,
+                                beetle_parms = beetle_parms)
 
 ```
 
+```{r}
+impact_type = "climate_only"
+climate_chng_scen = "business-as-usual"
 
+# Pine Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742
+F3 = 0.2536 
+F4 = 1.6902
+
+# Pine Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
+
+# Pine Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+
+scenario_parms = list(years = length(clim_BAU),
+                      time_step=2)
+
+beetle_parms = list(btl_pop_0=5000, 
+                    r_max=1.16, 
+                    K_0_btl = 1000)
+
+pine_parms = list(ntrees_0 = 1000,
+                  initial_pop = c(100,100,50,50,50),
+                  initial_carbon = 0,
+                  stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm"),
+                  avg_stage_dbh = c(1,5,15,30,50),
+                  pine_fert = c(F0,F1,F2,F3,F4),
+                  pine_surv = c(p0,p1,p2,p3,p4),
+                  pine_growth = c(g01,g12,g23,g34))
+
+climate_only = whitePine_PopDynamics_model(clim_df = clim_BAU,
+                                clim_scen_name = climate_chng_scen,
+                                impact_type = impact_type,
+                                scenario_parms = scenario_parms,
+                                pine_parms = pine_parms,
+                                beetle_parms = beetle_parms)
+```
+
+
+```{r}
+impact_type = "beetles_and_climate"
+climate_chng_scen = "business-as-usual"
+
+# Pine Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742
+F3 = 0.2536 
+F4 = 1.6902
+
+# Pine Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
+
+# Pine Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+
+scenario_parms = list(years = length(clim_BAU),
+                      time_step=2)
+
+beetle_parms = list(btl_pop_0=5000, 
+                    r_max=1.16, 
+                    K_0_btl = 1000)
+
+pine_parms = list(ntrees_0 = 1000,
+                  initial_pop = c(100,100,50,50,50),
+                  initial_carbon = 0,
+                  stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm"),
+                  avg_stage_dbh = c(1,5,15,30,50),
+                  pine_fert = c(F0,F1,F2,F3,F4),
+                  pine_surv = c(p0,p1,p2,p3,p4),
+                  pine_growth = c(g01,g12,g23,g34))
+
+beetles_and_climate = whitePine_PopDynamics_model(clim_df = clim_BAU,
+                                clim_scen_name = climate_chng_scen,
+                                impact_type = impact_type,
+                                scenario_parms = scenario_parms,
+                                pine_parms = pine_parms,
+                                beetle_parms = beetle_parms)
+```
 

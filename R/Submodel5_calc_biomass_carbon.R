@@ -14,6 +14,6 @@ calc_biomass_carbon = function(avg_stage_dbh, pop_structure, carbon_coeff = 0.47
   biomass = sum(forest_carbon_df$biomass)
   carbon = biomass*carbon_coeff
   
-  return(list(total_biomass=total_biomass,total_carbon=carbon))
+  return(list(total_biomass=biomass,total_carbon=carbon))
   
 }

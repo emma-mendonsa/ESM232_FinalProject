@@ -3,7 +3,7 @@
 #' 
 #' 
 #' @param time time since start
-#' @param P population
+#' @param B beetle population
 #' @param parms - as list with two values, r, K
 #' @param r intrinsic growth rate
 #' @param K carrying capacity
@@ -11,7 +11,7 @@
 
 beetle_pop = function(Time, B, parms){
 
-  dBeetles = parms$r * B * (1-B/parms$K)
+  dBeetles = parms$r_max * B * (1-B/parms$K_0_btl)
   
   return(list(dBeetles))
 
