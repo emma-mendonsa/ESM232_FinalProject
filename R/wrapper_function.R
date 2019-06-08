@@ -48,18 +48,18 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,scenario_parms,pin
     ################################# Beetles ######################################
     
     tmp = data.frame(time = 1:scenario_parms$time_step) # Temporary data.frame for beetle output. 
-    Ki = pine_parms$initial_pop*output_df$total_pine[i-1]/combined$total_pine[1]
+    Ki = beetle_parms$K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1]
     beetle_parms = list(p0=btl_pop_0, r=r_0, K=Ki)
-    tmp_result = ode(combined$btl_pop[i-1], tmp$time, beetle_pop, beetle_parms) # ODE solver to determine beetle pop size in time 2
-    combined$btl_pop[i] = tmp_result[2,2] # Put ODE results into main 'combined' table
+    tmp_result = ode(output_df$btl_pop[i-1], tmp$time, beetle_pop, beetle_parms) # ODE solver to determine beetle pop size in time 2
+    output_df$btl_pop[i] = tmp_result[2,2] # Put ODE results into main 'output_df' table
     
     ################################### Pines #######################################
     
-    pine_surv = as.numeric(combined[i-1,5:9]) # Pine survival vector in a given time step
-    pine_growth = as.numeric(combined[i-1,10:13]) # Pine growth vector for a given time step
-    init_pop = as.numeric(combined[i-1,14:18]) # Initial population size, relative to each time step. 
-    combined$p_p3[i] = p3 # No beetle impact
-    combined$p_p4[i] = p4 # No beetle impact
+    pine_surv = as.numeric(output_df[i-1,5:9]) # Pine survival vector in a given time step
+    pine_growth = as.numeric(output_df[i-1,10:13]) # Pine growth vector for a given time step
+    init_pop = as.numeric(output_df[i-1,14:18]) # Initial population size, relative to each time step. 
+    output_df$p_p3[i] = p3 # No beetle impact
+    output_df$p_p4[i] = p4 # No beetle impact
     
     # Implement whitebark pine matrix model
     pine = whitePine_matrix_model(fertility = pine_fert,
@@ -68,29 +68,29 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,scenario_parms,pin
                                   time=2,
                                   initial_pop = ntrees_0) 
     
-    combined[i,14:18] = pine$pop_structure[,2] # Put pop structure into main output dataframe
-    combined[i,19] = pine$total_pop[2] # Put total pop into main output dataframe
+    output_df[i,14:18] = pine$pop_structure[,2] # Put pop structure into main output dataframe
+    output_df[i,19] = pine$total_pop[2] # Put total pop into main output dataframe
     
     
     ################################################ Pre-fire forest carbon #####
     
     avg_stage_dbh = c(1,5,15,30,50)
-    frst_crbn = calc_biomass_carbon(avg_stage_dbh = avg_stage_dbh, pop_structure = as.numeric(combined[i,14:18]))
-    combined[i,20] = frst_crbn[2] # Put into main output data.frame. 
+    frst_crbn = calc_biomass_carbon(avg_stage_dbh = avg_stage_dbh, pop_structure = as.numeric(output_df[i,14:18]))
+    output_df[i,20] = frst_crbn[2] # Put into main output data.frame. 
     
     ################################################# Fire ######################
     
-    combined$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
-    combined$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
+    output_df$fire_prob[i] = ifelse(clim_BAU$Su_tmax[i] >36 && clim_BAU$W_tmin[i] > 2, "H", "L")
+    output_df$fire_sev[i] =  ifelse(clim_BAU$apr_snow[i] >=80, "Low", ifelse(clim_BAU$apr_snow[i] >=60, "Mod", "Sev"))
     
-    fire = burnt_biomass_model(initial_pop = as.numeric(combined[i,14:18]),
+    fire = burnt_biomass_model(initial_pop = as.numeric(output_df[i,14:18]),
                                pine_biomass = frst_crbn$total_biomass,
-                               fire_prob = combined$fire_prob[i],
-                               fire_sev = combined$fire_sev[i],
+                               fire_prob = output_df$fire_prob[i],
+                               fire_sev = output_df$fire_sev[i],
                                forest_carbon = frst_crbn$total_carbon)
     
-    combined[i,14:18] = fire$postFire_pop
-    combined$postFire_forest_carbon = fire$post_fire_carbon
+    output_df[i,14:18] = fire$postFire_pop
+    output_df$postFire_forest_carbon = fire$post_fire_carbon
     
   }
   
