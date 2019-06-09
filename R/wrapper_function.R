@@ -3,7 +3,7 @@
 #' 
 #' 
 
-whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenario_parms,pine_parms,beetle_parms,btl_K0){
+whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenario_parms,pine_parms,beetle_parms,beetle_K){
   
   if(impact_type=="climate_only"){
   
@@ -55,7 +55,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
     
     # Update beetle carrying capacity based on size of pine population in previous and initial time step. 
     # This causes carrying capacity to change proportionally with the size of the forest
-    Ki = ifelse(output_df$total_pine[i-1]>0,K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1],0)
+    Ki = ifelse(output_df$total_pine[i-1]>0,beetle_K*output_df$total_pine[i-1]/output_df$total_pine[1],beetle_K)
     
     # Reset beetle parameters with new rmax and carrying capacity
     beetle_parms = list(btl_pop_0=beetle_parms$btl_pop_0, 
@@ -119,8 +119,8 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
                              p_p0 = c (pine_parms$pine_surv[1]* clim_coef), # Climate impact
                              p_p1 = rep(pine_parms$pine_surv[2], years), 
                              p_p2 = rep(pine_parms$pine_surv[3], years),
-                             p_p3 = rep(pine_parms$pine_surv[4], years), # No Beetle impact (in for loop). When impacted by beetles, this value decreases as beetles increase.
-                             p_p4 = rep(pine_parms$pine_surv[5], years), # No Beetle impact (in for loop) 
+                             p_p3 = rep(pine_parms$pine_surv[4], years), # When impacted by beetles, this value decreases as beetles increase.
+                             p_p4 = rep(pine_parms$pine_surv[5], years), #
                              g01 = c(pine_parms$pine_growth[1]* clim_coef), # Climate impact. This value decreases as CWD increases. More water stress = less growth. 
                              g12 = c(pine_parms$pine_growth[1]* clim_coef), # Climate impact
                              g23 = c(pine_parms$pine_growth[1]* clim_coef), # Climate impact
@@ -147,7 +147,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
       output_df[1,21] = ifelse(clim_df$Su_tmax[1] >36 && clim_df$W_tmin[1] > 2, "H", "L") # Initial probability of fire
       output_df[1,22] = ifelse(clim_df$apr_snow[1] >=80, "Low", ifelse(clim_df$apr_snow[1] >=60, "Mod", "Sev")) # Initial severity of fire
       
-      for(i in 2:nrow(clim_df)){
+      for(i in 2:91){
         
         ################################# Beetles ######################################
         
@@ -155,7 +155,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
         
         # Update beetle carrying capacity based on size of pine population in previous and initial time step. 
         # This causes carrying capacity to change proportionally with the size of the forest
-        Ki = ifelse(output_df$total_pine[i-1]>0,K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1],0)
+        Ki = ifelse(output_df$total_pine[i-1]>0,beetle_K*output_df$total_pine[i-1]/output_df$total_pine[1],beetle_K)
         
         # Reset beetle parameters with new rmax and carrying capacity
         beetle_parms = list(btl_pop_0=beetle_parms$btl_pop_0, 
@@ -172,6 +172,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
         init_pop = as.numeric(output_df[i-1,14:18]) # Initial population size, relative to each time step. 
         output_df$p_p3[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p3[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p3[i-1]) # beetle impact
         output_df$p_p4[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p4[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p4[i-1]) # beetle impact
+        
         
         # Implement whitebark pine matrix model
         pine = whitePine_matrix_model(stages = pine_parms$stages,
@@ -257,7 +258,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
         
         # Update beetle carrying capacity based on size of pine population in previous and initial time step. 
         # This causes carrying capacity to change proportionally with the size of the forest
-        Ki = ifelse(output_df$total_pine[i-1]>0,K_0_btl*output_df$total_pine[i-1]/output_df$total_pine[1],0)
+        Ki = ifelse(output_df$total_pine[i-1]>0,beetle_K*output_df$total_pine[i-1]/output_df$total_pine[1],beetle_K)
         
         # Reset beetle parameters with new rmax and carrying capacity
         beetle_parms = list(btl_pop_0=beetle_parms$btl_pop_0, 
