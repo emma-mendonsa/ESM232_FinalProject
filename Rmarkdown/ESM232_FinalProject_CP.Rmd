@@ -82,13 +82,13 @@ g12 = 0.0104
 g23 = 0.0144
 g34 = 0.0144
 
-K_0_btl = 500000
+beetle_K = 500000
 scenario_parms = list(years = length(clim_BAU),
                       time_step=2)
 
 beetle_parms = list(btl_pop_0=5000, 
                     r_max=1.16, 
-                    K_0_btl = K_0_btl)
+                    K_0_btl = beetle_K)
 
 pine_parms = list(ntrees_0 = 1000,
                   initial_pop = c(100,100,50,50,50),
@@ -104,8 +104,8 @@ beetles_only = whitePine_PopDynamics_model(clim_df = clim_BAU,
                                 impact_type = impact_type,
                                 scenario_parms = scenario_parms,
                                 pine_parms = pine_parms,
-                                beetle_parms = beetle_parms)
-
+                                beetle_parms = beetle_parms,
+                                beetle_K = beetle_K)
 ```
 
 ```{r climate_only}
@@ -153,7 +153,8 @@ climate_only = whitePine_PopDynamics_model(clim_df = clim_BAU,
                                 impact_type = impact_type,
                                 scenario_parms = scenario_parms,
                                 pine_parms = pine_parms,
-                                beetle_parms = beetle_parms)
+                                beetle_parms = beetle_parms,
+                                beetle_K = beetle_K)
 ```
 
 
@@ -202,6 +203,7 @@ beetles_and_climate = whitePine_PopDynamics_model(clim_df = clim_BAU,
                                 impact_type = impact_type,
                                 scenario_parms = scenario_parms,
                                 pine_parms = pine_parms,
-                                beetle_parms = beetle_parms)
+                                beetle_parms = beetle_parms,
+                                beetle_K = beetle_K)
 ```
 
