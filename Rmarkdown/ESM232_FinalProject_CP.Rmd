@@ -27,6 +27,8 @@ source("../R/wrapper_function.R")
 options(scipen = 999)
 ```
 
+
+####Setting up climate change data
 ```{r read_climate_data, message=FALSE, warning=TRUE, paged.print=TRUE}
 # Find average tmin and tmax values for Sierra Nevada Ecoregion based on historic data
 cwd_raw = raster("../climate_data/cwd1981_2010_ave_HST_1559416632/cwd1981_2010_ave_HST_1559416632.tif")
@@ -205,5 +207,24 @@ beetles_and_climate = whitePine_PopDynamics_model(clim_df = clim_BAU,
                                 pine_parms = pine_parms,
                                 beetle_parms = beetle_parms,
                                 beetle_K = beetle_K)
+```
+
+
+##Graph Results:
+```{r}
+
+scenario_df = rbind.data.frame(climate_only, beetles_only, beetles_and_climate)
+
+ggplot(scenario_df %>% filter(climate == "business-as-usual"), 
+       aes(x = year, y = postFire_forest_carbon, by = impact_type))+
+  facet_wrap(~impact_type)+
+  geom_line()+
+  xlab("Year")+
+  ylab("Carbon in Forest (kg)")+
+  ggtitle("Climate Scenario: Business As Usual")
+  #scale_colour_discrete(name = "Forest impacted by:",
+  #                      labels = c("Climate", "Beetles", "Climate & Beetles"))
+
+
 ```
 
