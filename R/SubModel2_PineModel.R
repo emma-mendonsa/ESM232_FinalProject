@@ -7,7 +7,7 @@
 #' @param initial_pop vector of the initial population struture
 #' @param time length of time to calculate the population structure over
 #' @return List that contains the population structure through time, total population through time, and the population lambda (finite growth rate) based on the initial matrix
-#'
+#' @references Jules et al. (2016) The relative contributions of disease and insects in the decline of a long-lived tree: stochastic demographic model of whitebark pine (Pinus albicaulis). Forest Ecology and Managment. 381. Pages 144-156. 
 
 whitePine_matrix_model = function(stages, fertility, survival, growth, 
                                   initial_pop, time) {
