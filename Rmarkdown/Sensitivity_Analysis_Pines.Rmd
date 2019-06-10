@@ -22,12 +22,16 @@ library(popbio)
 source("../R/SubModel2_PineModel.R")
 ```
 
-###Goals:
+###Overall Analysis:
 1. Perform a sensitivity analysis on the growth of whitebark pines
-  -->> If all else is held constant, is the variability in the pine population
-2. Perform a sensitivity analysis on the survival and fecundity of whitebark pines
-  -->> We want to see how survival changes with intervention (fire, beetles, etc), but we are also uncertain about the fecundity of the whitebark pines.
-
+  -->> If all else is held constant, which growth life stage has the greatest impact on the pine population
+  -->> Result: growth "g34" is the most influencial/sensitive to the total pine population
+2. Perform a sensitivity analysis on the survival whitebark pines
+  -->> If all else is held constant, which survival life stage has the greatest impact on the pine population
+  -->> Result: "F2" and "F3" are the most influencial/sensitive on the total pine population.
+3. Perform a sensitivity analysis on the fecundity whitebark pines
+  -->> If all else is held constant, which fecundity life stage has the greatest impact on the pine population
+  -->> Result: "p0" is the most influencial/sensitive on the total pine population.
 
 ####Sensitivity Analysis: Growth
 Data Setup: 
@@ -59,7 +63,7 @@ g34 = 0.0144
 
 # Create our two samples for Sobel
 # Growth
-gs1 = cbind.data.frame(g01 = runif(min = 0.0010, max=0.0025, n=nsample), # Published g01 value = 0.0018
+gs1 = cbind.data.frame(g01 = runif(min = 0.0010, max=0.0025, n=nsample),  # Published g01 value = 0.0018
                        g12 = runif(min = 0.0005, max=0.0015, n=nsample),  # Published g12 value = 0.0104
                        g23 = runif(min = 0.0100, max=0.0200, n=nsample),  # Published g23 value = 0.0144
                        g34 = runif(min = 0.0100, max=0.0200, n=nsample))  # Published g34 value = 0.0144
@@ -69,7 +73,7 @@ gs2 = cbind.data.frame(g01 = runif(min = 0.0010, max=0.0025, n=nsample),
                        g23 = runif(min = 0.0100, max=0.0200, n=nsample),  
                        g34 = runif(min = 0.0100, max=0.0200, n=nsample))
 
-# now include uncertainty in our Fertility
+# Fertility
 fs1 = cbind.data.frame(F0=rep(F0, times = nsample), 
                        F1=rep(F1, times = nsample),
                        F2=rep(F2, times = nsample),
@@ -82,7 +86,7 @@ fs2 = cbind.data.frame(F0=rep(F0, times = nsample),
                        F3=rep(F3, times = nsample),
                        F4=rep(F4, times = nsample))
 
-# now include uncertainty in our Survivability
+# Survivability
 ps1 = cbind.data.frame(p0=rep(p0, times = nsample), 
                        p1=rep(p1, times = nsample),
                        p2=rep(p2, times = nsample),
@@ -96,7 +100,7 @@ ps2 = cbind.data.frame(p0=rep(p0, times = nsample),
                        p4=rep(p4, times = nsample))
 
 
-# put survivability and fertility together
+# put together
 all_growth1 = cbind.data.frame(gs1,fs1,ps1)
 all_growth2 = cbind.data.frame(gs2,fs2,ps2)
 ```
@@ -124,21 +128,22 @@ for (i in 1:nsim) {
   print(i)
 }
 
-# give our results to sensitivity structure
+# results to sensitivity structure
 
 sens_growth = sensitivity::tell(sens_growth, res)
 
-# look at results. 
+#Results: show that the growth "g34" is the most influencial/sensitive to the total pine population.
+sens_growth$S  #shows the first-order sensitivity per parameter life stage
 
-sens_growth$S  ## The results show that the growth in the 1st age class is the most important.
-sens_growth$T
+sens_growth_results = cbind.data.frame(sens_growth$X, pop_total=sens_growth$y)
 
-tmp = cbind.data.frame(sens_micro$X, pop_total=sens_micro$y)
+ggplot(sens_growth_results, aes(x = g01, pop_total))+geom_point()
+ggplot(sens_growth_results, aes(x = g12, pop_total))+geom_point()
+ggplot(sens_growth_results, aes(x = g23, pop_total))+geom_point()
+ggplot(sens_growth_results, aes(x = g34, pop_total))+geom_point()
 
-ggplot(tmp, aes(x = g01, pop_total))+geom_point()
-ggplot(tmp, aes(x = g12, pop_total))+geom_point()
-ggplot(tmp, aes(x = g23, pop_total))+geom_point()
-ggplot(tmp, aes(x = g34, pop_total))+geom_point()
+plot(sens_growth)
+
 ```
 
 
@@ -171,22 +176,20 @@ g23 = 0.0144
 g34 = 0.0144
 
 # Create our two samples for Sobel
-# Growth
-
-# now include uncertainty in our Fertility
+# Fecundity
 fs1 = cbind.data.frame(F0=rep(F0, times = nsample), 
-                       F1=runif(min = 0.0010, max=0.0025, n=nsample), # 0
-                       F2=runif(min = 0, max=0.5, n=nsample), # 0.0742
-                       F3=runif(min = 0, max=1, n=nsample), # 0.2536
-                       F4=runif(min = 1, max=2, n=nsample)) # 1.6902
+                       F1=runif(min = 0.0010, max=0.0025, n=nsample),      #Published F1 value = 0
+                       F2=runif(min = 0, max=0.5, n=nsample),              #Published F2 value = 0.0742
+                       F3=runif(min = 0, max=1, n=nsample),                #Published F3 value = 0.2536
+                       F4=runif(min = 1, max=2, n=nsample))                #Published F4 value = 1.6902
 
 fs2 = cbind.data.frame(F0=rep(F0, times = nsample), 
-                       F1=runif(min = 0.0010, max=0.0025, n=nsample), # 0
-                       F2=runif(min = 0, max=0.5, n=nsample), # 0.0742
-                       F3=runif(min = 0, max=1, n=nsample), # 0.2536
+                       F1=runif(min = 0.0010, max=0.0025, n=nsample), 
+                       F2=runif(min = 0, max=0.5, n=nsample), 
+                       F3=runif(min = 0, max=1, n=nsample), 
                        F4=runif(min = 1, max=2, n=nsample))
 
-# now include uncertainty in our Survivability
+# Growth
 gs1 = cbind.data.frame(g01=rep(g01, times = nsample), 
                        g12=rep(g12, times = nsample),
                        g23=rep(g23, times = nsample),
@@ -211,9 +214,10 @@ ps2 = cbind.data.frame(p0=rep(p0, times = nsample),
                        p4=rep(p4, times = nsample))
 
 
-# put survivability and fertility together
+# put together
 all_fecundity1 = cbind.data.frame(gs1,fs1,ps1)
 all_fecundity2 = cbind.data.frame(gs2,fs2,ps2)
+
 ```
 
 
@@ -239,13 +243,12 @@ for (i in 1:nsim) {
   print(i)
 }
 
-# give our results to sensitivity structure
+#create sensitivity structure
 sens_fec_results = sensitivity::tell(sens_fecundity, res)
 
-# look at results. 
 
-sens_fec_results$S  ## The results show that the fecundity in the 4th age class (F3) is the most important.
-sens_fec_results$T
+#Results: show that "F2" and "F3" are the most influencial/sensitive on the total pine population.
+sens_fec_results$S  #shows the first-order sensitivity per parameter life stage
 
 sens_fec_df = cbind.data.frame(sens_fec_results$X, pop_total=sens_fec_results$y)
 
@@ -253,7 +256,12 @@ ggplot(sens_fec_df, aes(x = F1, pop_total))+geom_point()
 ggplot(sens_fec_df, aes(x = F2, pop_total))+geom_point()
 ggplot(sens_fec_df, aes(x = F3, pop_total))+geom_point()
 ggplot(sens_fec_df, aes(x = F4, pop_total))+geom_point()
+
+plot(sens_fec_results)
+
 ```
+
+
 
 
 ####Sensitivity Analysis: Survival 
@@ -286,20 +294,28 @@ g23 = 0.0144
 g34 = 0.0144
 
 # Create our two samples for Sobel
-# Growth
-ps1 = cbind.data.frame(p0 = rnorm(mean=0.9353, sd=0.15, n=nsample), 
-                       p1 = rnorm(mean=0.9827, sd=0.15, n=nsample),
-                       p2 = rnorm(mean = 0.9720, sd=0.15, n=nsample),
-                       p3 = rnorm(mean = 0.9806, sd=0.15, n=nsample),                       
-                       p4 = rnorm(mean = 0.9959, sd=0.15, n=nsample))
+# Survival
 
-p2 = cbind.data.frame(p0 = rnorm(mean=0.9353, sd=0.15, n=nsample), 
-                       p1 = rnorm(mean=0.9827, sd=0.15, n=nsample),
-                       p2 = rnorm(mean = 0.9720, sd=0.15, n=nsample),
-                       p3 = rnorm(mean = 0.9806, sd=0.15, n=nsample),                       
-                       p4 = rnorm(mean = 0.9959, sd=0.15, n=nsample))
+#ps1 = cbind.data.frame(p0 = rnorm(mean=0.9353, sd=0.15, n=nsample), 
+#                       p1 = rnorm(mean=0.9827, sd=0.15, n=nsample),
+#                       p2 = rnorm(mean = 0.9720, sd=0.15, n=nsample),
+#                       p3 = rnorm(mean = 0.9806, sd=0.15, n=nsample),                       
+#                       p4 = rnorm(mean = 0.9959, sd=0.15, n=nsample))
 
-# now include uncertainty in our Fertility
+ps1 = cbind.data.frame(p0 = runif(min=0.9, max = 1, n=nsample),       #Published p0 value = 0.9353
+                       p1 = runif(min=0.9, max = 1, n=nsample),       #Published p1 value = 0.9827
+                       p2 = runif(min=0.9, max = 1, n=nsample),       #Published p2 value = 0.9720
+                       p3 = runif(min=0.9, max = 1, n=nsample),       #Published p3 value = 0.9806                       
+                       p4 = runif(min=0.9, max = 1, n=nsample))       #Published p4 value = 0.9959
+
+
+p2 = cbind.data.frame(p0 = runif(min=0.9, max = 1, n=nsample),       
+                       p1 = runif(min=0.9, max = 1, n=nsample),       
+                       p2 = runif(min=0.9, max = 1, n=nsample),      
+                       p3 = runif(min=0.9, max = 1, n=nsample),                              
+                       p4 = runif(min=0.9, max = 1, n=nsample))
+
+# Fecundity
 fs1 = cbind.data.frame(F0=rep(F0, times = nsample), 
                        F1=rep(F1, times = nsample),
                        F2=rep(F2, times = nsample),
@@ -312,7 +328,7 @@ fs2 = cbind.data.frame(F0=rep(F0, times = nsample),
                        F3=rep(F3, times = nsample),
                        F4=rep(F4, times = nsample))
 
-# now include uncertainty in our Survivability
+# Growth
 gs1 = cbind.data.frame(g01=rep(g01, times = nsample), 
                        g12=rep(g12, times = nsample),
                        g23=rep(g23, times = nsample),
@@ -355,10 +371,9 @@ for (i in 1:nsim) {
 # give our results to sensitivity structure
 sens_survival_results = sensitivity::tell(sens_survival, res)
 
-# look at results. 
+#Results: show that "p0" is the most influencial/sensitive on the total pine population.
 
-sens_survival_results$S  ## The results show that 
-sens_survival_results$T
+sens_survival_results$S  #shows the first-order sensitivity per parameter life stage
 
 sens_survival_df = cbind.data.frame(sens_survival_results$X, pop_total=sens_survival_results$y)
 
@@ -367,5 +382,9 @@ ggplot(sens_survival_df, aes(x = p1, pop_total))+geom_point()
 ggplot(sens_survival_df, aes(x = p2, pop_total))+geom_point()
 ggplot(sens_survival_df, aes(x = p3, pop_total))+geom_point()
 ggplot(sens_survival_df, aes(x = p4, pop_total))+geom_point()
+
+plot(sens_survival_results,
+     ylim = c(-2, 3))
+
 ```
 
