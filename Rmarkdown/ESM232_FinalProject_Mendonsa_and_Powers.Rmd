@@ -8,7 +8,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Effect of climate change, mountain pine beetle, and forest fires on carbon cycling in whitebark pine (*Pinus albicus*) stands
-```{r packages_and_function, message=FALSE}
+```{r packages_and_function, message=FALSE, echo=FALSE, warning=FALSE}
 library(tidyverse)
 library(sensitivity)
 library(reshape2)
@@ -415,34 +415,71 @@ beetles_and_climate_mod = whitePine_PopDynamics_model(clim_df = clim_moderate,
 scenario_df = rbind.data.frame(climate_only, beetles_only, beetles_and_climate,
                                climate_only_mod, beetles_only_mod, beetles_and_climate_mod)
 
-ggplot(scenario_df %>% filter(climate == "business-as-usual"), 
-       aes(x = year, y = postFire_forest_carbon, by = impact_type))+
-  facet_wrap(~impact_type)+
-  geom_line()+
-  xlab("Year")+
-  ylab("Carbon in Forest (kg)")+
-  ggtitle("Climate Scenario: Business As Usual")
+impact_labels = c(climate_only = "Climate Only", beetles_only = "Beetles Only", beetles_and_climate = "Beetles & Climate")
+climate_labels = c('business-as-usual' = "Business as Usual", 'moderate' = "Moderate")
 
-ggplot(scenario_df %>% filter(climate == "moderate"), 
-       aes(x = year, y = postFire_forest_carbon, by = impact_type))+
-  facet_wrap(~impact_type)+
+ggplot(scenario_df, aes(x = year, y = postFire_forest_carbon, by = impact_type))+
+  facet_grid(climate ~ impact_type, labeller = labeller(impact_type = impact_labels, climate = climate_labels))+
   geom_line()+
   xlab("Year")+
   ylab("Carbon in Forest (kg)")+
   ggtitle("Climate Scenario: Moderate Climate Change")+
-  theme_gray()
-
-  #scale_colour_discrete(name = "Forest impacted by:",
-  #                      labels = c("Climate", "Beetles", "Climate & Beetles"))
+  theme_bw()
 
 
 ```
+
 
 ```{r}
- diffs = data.frame(year = climate_only$year,climate_only$total_pine,beetles_only$total_pine,beetles_and_climate$total_pine) %>% 
+# Comparison of total beetle and total pine populations
+
+beetle_df = subset.data.frame(x = scenario_df, select = c(year, total_pine, btl_pop, impact_type, climate))
+
+beetle_df = filter(beetle_df, impact_type == "beetles_only" | impact_type == "beetles_and_climate")
+
+beetle_long_df = gather(data = beetle_df, key = pop_type, value = pop_amt, 
+                        total_pine:btl_pop)
+
+ggplot(beetle_long_df, aes(x = year, y = pop_amt, fill = pop_type))+
+  facet_grid(climate ~ impact_type, labeller = labeller(impact_type = impact_labels, climate = climate_labels))+
+  geom_bar(stat = "identity", position = position_dodge())+
+  ylab("Population (count)")+
+  xlab("Year")+
+  scale_fill_discrete(name = "Population Type:", labels = c("Beetle Population", "Pine Population"))+
+  theme_bw()
+
+```
+
+
+```{r}
+
+#Investigating differences between total pine populations and each scenario
+
+diffs_BAU = data.frame(year = climate_only$year,
+                    climate_only$total_pine,
+                    beetles_only$total_pine,
+                    beetles_and_climate$total_pine) %>% 
   melt(id.vars = "year")
 
-ggplot(diffs,aes(x = year, y = value, color = variable))+
-  geom_line()
+diffs_moderate = data.frame(year = climate_only$year,
+                    "climate only" = climate_only_mod$total_pine,
+                    "beetles only" = beetles_only_mod$total_pine,
+                    beetles_and_climate_mod$total_pine) %>% 
+  melt(id.vars = "year")
+
+ggplot(diffs_BAU,aes(x = year, y = value, color = variable))+
+  geom_line()+
+  theme_bw()+
+  ggtitle("BAU Climate: Difference between total pine populations")+
+  ylab("Total Pines in Forest")
+
+ggplot(diffs_moderate,aes(x = year, y = value, color = variable))+
+  geom_line()+
+  theme_bw()+
+  ggtitle("Moderate Climate: Difference between total pine populations")+
+  ylab("Total Pines in Forest")
+
 ```
+
+
 
