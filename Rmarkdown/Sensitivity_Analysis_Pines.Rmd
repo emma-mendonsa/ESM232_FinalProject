@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r echo=FALSE, message=FALSE, error=FALSE}
-
 library(tidyverse)
 library(tibble)
 library(reshape2)
@@ -21,7 +20,6 @@ library(popbio)
 
 
 source("../R/SubModel2_PineModel.R")
-
 ```
 
 ###Goals:
@@ -34,7 +32,6 @@ source("../R/SubModel2_PineModel.R")
 ####Sensitivity Analysis: Growth
 Data Setup: 
 ```{r}
-
 nsample=200
 stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm")
 initial_pop = c(100,100,50,50,50)
@@ -62,15 +59,15 @@ g34 = 0.0144
 
 # Create our two samples for Sobel
 # Growth
-gs1 = cbind.data.frame(g01 = rnorm(mean=0.0018, sd=0.005, n=nsample), 
-                       g12 = rnorm(mean=0.0104, sd=0.005, n=nsample),
-                       g23 = rnorm(mean = 0.0144, sd=0.005, n=nsample),
-                       g34 = rnorm(mean = 0.0144, sd=0.005, n=nsample))
+gs1 = cbind.data.frame(g01 = runif(min = 0.0010, max=0.0025, n=nsample), # Published g01 value = 0.0018
+                       g12 = runif(min = 0.0005, max=0.0015, n=nsample),  # Published g12 value = 0.0104
+                       g23 = runif(min = 0.0100, max=0.0200, n=nsample),  # Published g23 value = 0.0144
+                       g34 = runif(min = 0.0100, max=0.0200, n=nsample))  # Published g34 value = 0.0144
 
-gs2 = cbind.data.frame(g01 = rnorm(mean=0.0018, sd=0.005, n=nsample), 
-                       g12 = rnorm(mean=0.0104, sd=0.005, n=nsample),
-                       g23 = rnorm(mean = 0.0144, sd=0.005, n=nsample),
-                       g34 = rnorm(mean = 0.0144, sd=0.005, n=nsample))
+gs2 = cbind.data.frame(g01 = runif(min = 0.0010, max=0.0025, n=nsample), 
+                       g12 = runif(min = 0.0005, max=0.0015, n=nsample),  
+                       g23 = runif(min = 0.0100, max=0.0200, n=nsample),  
+                       g34 = runif(min = 0.0100, max=0.0200, n=nsample))
 
 # now include uncertainty in our Fertility
 fs1 = cbind.data.frame(F0=rep(F0, times = nsample), 
@@ -100,22 +97,20 @@ ps2 = cbind.data.frame(p0=rep(p0, times = nsample),
 
 
 # put survivability and fertility together
-allgs1 = cbind.data.frame(gs1,fs1,ps1)
-allgs2 = cbind.data.frame(gs2,fs2,ps1)
+all_growth1 = cbind.data.frame(gs1,fs1,ps1)
+all_growth2 = cbind.data.frame(gs2,fs2,ps2)
 ```
 
 
 Sobel Run:
 ```{r}
-
 # get sobel samples
-sens_growth=sobol2007(model = NULL, allgs1, allgs2, nboot = 300)
+sens_growth = sobol2007(model = NULL, all_growth1, all_growth2, nboot = 300)
 
 head(sens_growth$X)
 nsim=nrow(sens_growth$X)
 
-
-# Run over 20 years to see final population
+# Run over 91 years to see final population
 # use as numeric to extract parameters
 res = rep(0, times=nsim)
 for (i in 1:nsim) {
@@ -125,12 +120,13 @@ for (i in 1:nsim) {
                                growth = as.numeric(sens_growth$X[i,c("g01", "g12","g23","g34")]), 
                                initial_pop = initial_pop, 
                                time = 91)
-  res[i] = tmp$total_pop[time]
+  res[i] = tmp$total_pop[91]
+  print(i)
 }
 
 # give our results to sensitivity structure
 
-sens_micro= sensitivity::tell(sens_micro, res)
+sens_growth = sensitivity::tell(sens_growth, res)
 
 # look at results. 
 
@@ -139,13 +135,128 @@ sens_growth$T
 
 tmp = cbind.data.frame(sens_micro$X, pop_total=sens_micro$y)
 
-ggplot(tmp, aes(x = p2, pop_total))+geom_point()
-
-
+ggplot(tmp, aes(x = g01, pop_total))+geom_point()
+ggplot(tmp, aes(x = g12, pop_total))+geom_point()
+ggplot(tmp, aes(x = g23, pop_total))+geom_point()
+ggplot(tmp, aes(x = g34, pop_total))+geom_point()
 ```
 
 
-####Sensitivity Analysis: Survival and Fecundity
+####Sensitivity Analysis: Fecundity 
+Data Setup: 
+```{r}
+nsample=200
+stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm")
+initial_pop = c(100,100,50,50,50)
+time = 2
+
+# Pine Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742
+F3 = 0.2536 
+F4 = 1.6902
+
+# Pine Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
+
+# Pine Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+
+# Create our two samples for Sobel
+# Growth
+
+# now include uncertainty in our Fertility
+fs1 = cbind.data.frame(F0=rep(F0, times = nsample), 
+                       F1=runif(min = 0.0010, max=0.0025, n=nsample), # 0
+                       F2=runif(min = 0, max=0.5, n=nsample), # 0.0742
+                       F3=runif(min = 0, max=1, n=nsample), # 0.2536
+                       F4=runif(min = 1, max=2, n=nsample)) # 1.6902
+
+fs2 = cbind.data.frame(F0=rep(F0, times = nsample), 
+                       F1=runif(min = 0.0010, max=0.0025, n=nsample), # 0
+                       F2=runif(min = 0, max=0.5, n=nsample), # 0.0742
+                       F3=runif(min = 0, max=1, n=nsample), # 0.2536
+                       F4=runif(min = 1, max=2, n=nsample))
+
+# now include uncertainty in our Survivability
+gs1 = cbind.data.frame(g01=rep(g01, times = nsample), 
+                       g12=rep(g12, times = nsample),
+                       g23=rep(g23, times = nsample),
+                       g34=rep(g34, times = nsample))
+
+gs2 = cbind.data.frame(g01=rep(g01, times = nsample), 
+                       g12=rep(g12, times = nsample),
+                       g23=rep(g23, times = nsample),
+                       g34=rep(g34, times = nsample))
+
+# Survival
+ps1 = cbind.data.frame(p0=rep(p0, times = nsample), 
+                       p1=rep(p1, times = nsample),
+                       p2=rep(p2, times = nsample),
+                       p3=rep(p3, times = nsample),
+                       p4=rep(p4, times = nsample))
+
+ps2 = cbind.data.frame(p0=rep(p0, times = nsample), 
+                       p1=rep(p1, times = nsample),
+                       p2=rep(p2, times = nsample),
+                       p3=rep(p3, times = nsample),
+                       p4=rep(p4, times = nsample))
+
+
+# put survivability and fertility together
+all_fecundity1 = cbind.data.frame(gs1,fs1,ps1)
+all_fecundity2 = cbind.data.frame(gs2,fs2,ps2)
+```
+
+
+Sobel Run:
+```{r}
+# get sobel samples
+sens_fecundity = sobol2007(model = NULL, all_fecundity1, all_fecundity2, nboot = 300)
+
+head(sens_fecundity$X)
+nsim=nrow(sens_fecundity$X)
+
+# Run over 91 years to see final population
+# use as numeric to extract parameters
+res = rep(0, times=nsim)
+for (i in 1:nsim) {
+  tmp = whitePine_matrix_model(stages = stages, 
+                               fertility = as.numeric(sens_fecundity$X[i,c("F0","F1","F2","F3", "F4")]), 
+                               survival = as.numeric(sens_fecundity$X[i,c("p0","p1","p2", "p3", "p4")]), 
+                               growth = as.numeric(sens_fecundity$X[i,c("g01", "g12","g23","g34")]), 
+                               initial_pop = initial_pop, 
+                               time = 91)
+  res[i] = tmp$total_pop[91]
+  print(i)
+}
+
+# give our results to sensitivity structure
+sens_fec_results = sensitivity::tell(sens_fecundity, res)
+
+# look at results. 
+
+sens_fec_results$S  ## The results show that the fecundity in the 4th age class (F3) is the most important.
+sens_fec_results$T
+
+sens_fec_df = cbind.data.frame(sens_fec_results$X, pop_total=sens_fec_results$y)
+
+ggplot(sens_fec_df, aes(x = F1, pop_total))+geom_point()
+ggplot(sens_fec_df, aes(x = F2, pop_total))+geom_point()
+ggplot(sens_fec_df, aes(x = F3, pop_total))+geom_point()
+ggplot(sens_fec_df, aes(x = F4, pop_total))+geom_point()
+```
+
+
+####Sensitivity Analysis: Survival 
 Data Setup: 
 ```{r}
 
@@ -176,30 +287,30 @@ g34 = 0.0144
 
 # Create our two samples for Sobel
 # Growth
-ps1 = cbind.data.frame(p0 = rnorm(mean=0.9353, sd=0.25, n=nsample), 
-                       p1 = rnorm(mean=0.9827, sd=0.25, n=nsample),
-                       p2 = rnorm(mean = 0.9720, sd=0.25, n=nsample),
-                       p3 = rnorm(mean = 0.9806, sd=0.25, n=nsample),                       
-                       p4 = rnorm(mean = 0.9959, sd=0.25, n=nsample))
+ps1 = cbind.data.frame(p0 = rnorm(mean=0.9353, sd=0.15, n=nsample), 
+                       p1 = rnorm(mean=0.9827, sd=0.15, n=nsample),
+                       p2 = rnorm(mean = 0.9720, sd=0.15, n=nsample),
+                       p3 = rnorm(mean = 0.9806, sd=0.15, n=nsample),                       
+                       p4 = rnorm(mean = 0.9959, sd=0.15, n=nsample))
 
-p2 = cbind.data.frame(p0 = rnorm(mean=0.9353, sd=0.25, n=nsample), 
-                       p1 = rnorm(mean=0.9827, sd=0.25, n=nsample),
-                       p2 = rnorm(mean = 0.9720, sd=0.25, n=nsample),
-                       p3 = rnorm(mean = 0.9806, sd=0.25, n=nsample),                       
-                       p4 = rnorm(mean = 0.9959, sd=0.25, n=nsample))
+p2 = cbind.data.frame(p0 = rnorm(mean=0.9353, sd=0.15, n=nsample), 
+                       p1 = rnorm(mean=0.9827, sd=0.15, n=nsample),
+                       p2 = rnorm(mean = 0.9720, sd=0.15, n=nsample),
+                       p3 = rnorm(mean = 0.9806, sd=0.15, n=nsample),                       
+                       p4 = rnorm(mean = 0.9959, sd=0.15, n=nsample))
 
 # now include uncertainty in our Fertility
 fs1 = cbind.data.frame(F0=rep(F0, times = nsample), 
                        F1=rep(F1, times = nsample),
-                       F2=rnorm(mean = 0.0742, sd=0.05, n=nsample),
-                       F3=rnorm(mean = 0.2536, sd=0.05, n=nsample),
-                       F4=rnorm(mean = 1.6902, sd=0.05, n=nsample))
+                       F2=rep(F2, times = nsample),
+                       F3=rep(F3, times = nsample),
+                       F4=rep(F4, times = nsample))
 
 fs2 = cbind.data.frame(F0=rep(F0, times = nsample), 
                        F1=rep(F1, times = nsample),
-                       F2=rnorm(mean = 0.0742, sd=0.05, n=nsample),
-                       F3=rnorm(mean = 0.2536, sd=0.05, n=nsample),
-                       F4=rnorm(mean = 1.6902, sd=0.05, n=nsample))
+                       F2=rep(F2, times = nsample),
+                       F3=rep(F3, times = nsample),
+                       F4=rep(F4, times = nsample))
 
 # now include uncertainty in our Survivability
 gs1 = cbind.data.frame(g01=rep(g01, times = nsample), 
@@ -214,49 +325,47 @@ gs2 = cbind.data.frame(g01=rep(g01, times = nsample),
 
 
 # put survivability and fertility together
-allgs1_surv_fec = cbind.data.frame(gs1,fs1,ps1)
-allgs2_surv_fec = cbind.data.frame(gs2,fs2,ps1)
+all_survival1 = cbind.data.frame(gs1,fs1,ps1)
+all_survival2 = cbind.data.frame(gs2,fs2,ps2)
 ```
 
 
 Sobel Run:
 ```{r}
-
 # get sobel samples
-sens_surv_fec =sobol2007(model = NULL, allgs1_surv_fec, allgs2_surv_fec, nboot = 300)
+sens_survival = sobol2007(model = NULL, all_survival1, all_survival2, nboot = 300)
 
-head(sens_surv_fec$X)
-nsim=nrow(sens_surv_fec$X)
-
+head(sens_survival$X)
+nsim=nrow(sens_survival$X)
 
 # Run over 20 years to see final population
 # use as numeric to extract parameters
-res = rep(0, times=nsim)
+res = rep(0, times = nsim)
 for (i in 1:nsim) {
   tmp = whitePine_matrix_model(stages = stages, 
-                               fertility = as.numeric(sens_surv_fec$X[i,c("F0","F1","F2","F3", "F4")]), 
-                               survival = as.numeric(sens_surv_fec$X[i,c("p0","p1","p2", "p3", "p4")]), 
-                               growth = as.numeric(sens_surv_fec$X[i,c("g01", "g12","g23","g34")]), 
+                               fertility = as.numeric(sens_survival$X[i,c("F0","F1","F2","F3", "F4")]), 
+                               survival = as.numeric(sens_survival$X[i,c("p0","p1","p2", "p3", "p4")]), 
+                               growth = as.numeric(sens_survival$X[i,c("g01", "g12","g23","g34")]), 
                                initial_pop = initial_pop, 
                                time = 91)
-  res[i] = tmp$total_pop[time]
+  res[i] = tmp$total_pop[91]
+  print(i)
 }
 
 # give our results to sensitivity structure
-
-sens_surv_fec_results = sensitivity::tell(sens_surv_fec, res)
+sens_survival_results = sensitivity::tell(sens_survival, res)
 
 # look at results. 
 
-sens_surv_fec_results$S  ## The results show that the fecundity in the 4th age class (F3) is the most important.
-sens_surv_fec_results$T
+sens_survival_results$S  ## The results show that 
+sens_survival_results$T
 
-sens_surv_fec_df = cbind.data.frame(sens_surv_fec_results$X, pop_total=sens_surv_fec_results$y)
+sens_survival_df = cbind.data.frame(sens_survival_results$X, pop_total=sens_survival_results$y)
 
-ggplot(sens_surv_fec_df, aes(x = F3, pop_total))+geom_point()
-
-
+ggplot(sens_survival_df, aes(x = p0, pop_total))+geom_point()
+ggplot(sens_survival_df, aes(x = p1, pop_total))+geom_point()
+ggplot(sens_survival_df, aes(x = p2, pop_total))+geom_point()
+ggplot(sens_survival_df, aes(x = p3, pop_total))+geom_point()
+ggplot(sens_survival_df, aes(x = p4, pop_total))+geom_point()
 ```
-
-
 
