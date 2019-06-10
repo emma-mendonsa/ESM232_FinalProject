@@ -17,8 +17,10 @@ library(tibble)
 library(reshape2)
 library(sensitivity)
 library(pse)
+library(popbio)
 
-source("R/SubModel2_PineModel.R")
+
+source("../R/SubModel2_PineModel.R")
 
 ```
 
@@ -55,7 +57,7 @@ g23 = 0.0144
 g34 = 0.0144
 
 # Create our two samples for Sobel
-# Survivability
+# Growth
 gs1 = cbind.data.frame(g01 = rnorm(mean=0.0018, sd=0.005, n=nsample), 
                        g12 = rnorm(mean=0.0104, sd=0.005, n=nsample),
                        g23 = rnorm(mean = 0.0144, sd=0.005, n=nsample),
@@ -118,7 +120,7 @@ for (i in 1:nsim) {
                                survival = as.numeric(sens_micro$X[i,c("p0","p1","p2", "p3", "p4")]), 
                                growth = as.numeric(sens_micro$X[i,c("g01", "g12","g23","g34")]), 
                                initial_pop = initial_pop, 
-                               time = time)
+                               time = 91)
   res[i] = tmp$total_pop[time]
 }
 
@@ -134,12 +136,13 @@ sens_micro$T
 
 tmp = cbind.data.frame(sens_micro$X, pop_total=sens_micro$y)
 
+ggplot(tmp, aes(x = p2, pop_total))+geom_point()
 
-ggplot(tmp, aes(p1, pop_total))+
-  geom_line()+
-  ylab("Total Population")+
-  xlab("Years after Rabbit Introduction")
-  geom_hline(yintercept = 10000, color = "blue")+
-  theme_classic()
 
 ```
+
+
+
+
+
+
