@@ -1,0 +1,145 @@
+---
+title: "Sensitivity_Analysis_pines"
+author: "Claire Powers & Emma Mendonsa"
+date: "June 9, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r echo=FALSE, message=FALSE, error=FALSE}
+
+library(tidyverse)
+library(tibble)
+library(reshape2)
+library(sensitivity)
+library(pse)
+
+source("R/SubModel2_PineModel.R")
+
+```
+
+
+1. Perform a sensitivity analysis on the growth of whitebark pines
+
+Data Setup: 
+```{r}
+
+nyears = 91
+nsample=91
+stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm")
+initial_pop = c(100,100,50,50,50)
+time = 2
+
+# Pine Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742
+F3 = 0.2536 
+F4 = 1.6902
+
+# Pine Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
+
+# Pine Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+
+# Create our two samples for Sobel
+# Survivability
+gs1 = cbind.data.frame(g01 = rnorm(mean=0.0018, sd=0.005, n=nsample), 
+                       g12 = rnorm(mean=0.0104, sd=0.005, n=nsample),
+                       g23 = rnorm(mean = 0.0144, sd=0.005, n=nsample),
+                       g34 = rnorm(mean = 0.0144, sd=0.005, n=nsample))
+
+gs2 = cbind.data.frame(g01 = rnorm(mean=0.0018, sd=0.005, n=nsample), 
+                       g12 = rnorm(mean=0.0104, sd=0.005, n=nsample),
+                       g23 = rnorm(mean = 0.0144, sd=0.005, n=nsample),
+                       g34 = rnorm(mean = 0.0144, sd=0.005, n=nsample))
+
+# now include uncertainty in our Fertility
+fs1 = cbind.data.frame(F0=rep(F0, times = nsample), 
+                       F1=rep(F1, times = nsample),
+                       F2=rep(F2, times = nsample),
+                       F3=rep(F3, times = nsample),
+                       F4=rep(F4, times = nsample))
+
+fs2 = cbind.data.frame(F0=rep(F0, times = nsample), 
+                       F1=rep(F1, times = nsample),
+                       F2=rep(F2, times = nsample),
+                       F3=rep(F3, times = nsample),
+                       F4=rep(F4, times = nsample))
+
+# now include uncertainty in our Survivability
+ps1 = cbind.data.frame(p0=rep(p0, times = nsample), 
+                       p1=rep(p1, times = nsample),
+                       p2=rep(p2, times = nsample),
+                       p3=rep(p3, times = nsample),
+                       p4=rep(p4, times = nsample))
+
+ps2 = cbind.data.frame(p0=rep(p0, times = nsample), 
+                       p1=rep(p1, times = nsample),
+                       p2=rep(p2, times = nsample),
+                       p3=rep(p3, times = nsample),
+                       p4=rep(p4, times = nsample))
+
+
+# put survivability and fertility together
+allgs1 = cbind.data.frame(gs1,fs1,ps1)
+allgs2 = cbind.data.frame(gs2,fs2,ps1)
+```
+
+
+Sobel Run:
+```{r}
+
+# get sobel samples
+sens_micro=sobol2007(model = NULL, allgs1, allgs2, nboot = 300)
+
+head(sens_micro$X)
+nsim=nrow(sens_micro$X)
+
+
+# Run over 20 years to see final population
+# use as numeric to extract parameters
+res = rep(0, times=nsim)
+for (i in 1:nsim) {
+  tmp = whitePine_matrix_model(stages = stages, 
+                               fertility = as.numeric(sens_micro$X[i,c("F0","F1","F2","F3", "F4")]), 
+                               survival = as.numeric(sens_micro$X[i,c("p0","p1","p2", "p3", "p4")]), 
+                               growth = as.numeric(sens_micro$X[i,c("g01", "g12","g23","g34")]), 
+                               initial_pop = initial_pop, 
+                               time = time)
+  res[i] = tmp$total_pop[time]
+}
+
+# give our results to sensitivity structure
+
+sens_micro= sensitivity::tell(sens_micro, res)
+
+# look at results. 
+## The results show that the parameter that really matters is the survivabilty in the 1st age class is the most important.
+## The 2nd highest effect coefficient is the fertility at age step 2.
+sens_micro$S
+sens_micro$T
+
+tmp = cbind.data.frame(sens_micro$X, pop_total=sens_micro$y)
+
+
+ggplot(tmp, aes(p1, pop_total))+
+  geom_line()+
+  ylab("Total Population")+
+  xlab("Years after Rabbit Introduction")
+  geom_hline(yintercept = 10000, color = "blue")+
+  theme_classic()
+
+```
