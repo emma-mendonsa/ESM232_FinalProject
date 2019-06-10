@@ -1,9 +1,10 @@
 
 
-clim_df_function = function(years, climate){
+clim_df_function = function(timeperiod, climate){
   
   source("../R/SubModel0_climate_variables.R")
   
+  years = timeperiod
   
   # Find average tmin and tmax values for Sierra Nevada Ecoregion based on historic data
   cwd_raw = raster("../climate_data/cwd1981_2010_ave_HST_1559416632/cwd1981_2010_ave_HST_1559416632.tif")

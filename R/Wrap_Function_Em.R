@@ -5,13 +5,18 @@
 
 
 forest_carbon_function = function(climate, impact, years, time_step, 
-                                  initial_carbon, clim_coef,
+                                  initial_carbon, clim_df,
                                   btl_r0, btl_pop0, btl_K0, btl_parms,
                                   pine_growth, pine_surv, pine_fert,
                                   pine_pop_initial = c(107,77,300,14,1)){
   
-  ifelse(climate == "moderate", clim_df = clim_moderate, ifelse(climate == "BAU", clim_df = clim_BAU, 
-                                                                "Error: Invalid climate option selected"))
+
+  clim_coef = ifelse(impact == "beetles", 1, 
+              ifelse(impact == "climate", 
+                     clim_df$cwd[1]/clim_df$cwd,
+              ifelse(impact == "climate_and_beetles",
+                     clim_df$cwd[1]/clim_df$cwd,
+                     "Error: Invalid impact option selected")))
   
   carbon_df = data.frame(year = 2010:2100, 
                         btl_r_coef = ifelse((log(sqrt(abs(clim_df$W_tmin[1]-clim_df$W_tmin)),10)+1)<1,1,
