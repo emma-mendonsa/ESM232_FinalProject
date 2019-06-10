@@ -24,14 +24,18 @@ source("../R/SubModel2_PineModel.R")
 
 ```
 
-
+###Goals:
 1. Perform a sensitivity analysis on the growth of whitebark pines
+  -->> If all else is held constant, is the variability in the pine population
+2. Perform a sensitivity analysis on the survival and fecundity of whitebark pines
+  -->> We want to see how survival changes with intervention (fire, beetles, etc), but we are also uncertain about the fecundity of the whitebark pines.
 
+
+####Sensitivity Analysis: Growth
 Data Setup: 
 ```{r}
 
-nyears = 91
-nsample=91
+nsample=200
 stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm")
 initial_pop = c(100,100,50,50,50)
 time = 2
@@ -105,10 +109,10 @@ Sobel Run:
 ```{r}
 
 # get sobel samples
-sens_micro=sobol2007(model = NULL, allgs1, allgs2, nboot = 300)
+sens_growth=sobol2007(model = NULL, allgs1, allgs2, nboot = 300)
 
-head(sens_micro$X)
-nsim=nrow(sens_micro$X)
+head(sens_growth$X)
+nsim=nrow(sens_growth$X)
 
 
 # Run over 20 years to see final population
@@ -116,9 +120,9 @@ nsim=nrow(sens_micro$X)
 res = rep(0, times=nsim)
 for (i in 1:nsim) {
   tmp = whitePine_matrix_model(stages = stages, 
-                               fertility = as.numeric(sens_micro$X[i,c("F0","F1","F2","F3", "F4")]), 
-                               survival = as.numeric(sens_micro$X[i,c("p0","p1","p2", "p3", "p4")]), 
-                               growth = as.numeric(sens_micro$X[i,c("g01", "g12","g23","g34")]), 
+                               fertility = as.numeric(sens_growth$X[i,c("F0","F1","F2","F3", "F4")]), 
+                               survival = as.numeric(sens_growth$X[i,c("p0","p1","p2", "p3", "p4")]), 
+                               growth = as.numeric(sens_growth$X[i,c("g01", "g12","g23","g34")]), 
                                initial_pop = initial_pop, 
                                time = 91)
   res[i] = tmp$total_pop[time]
@@ -129,10 +133,9 @@ for (i in 1:nsim) {
 sens_micro= sensitivity::tell(sens_micro, res)
 
 # look at results. 
-## The results show that the parameter that really matters is the survivabilty in the 1st age class is the most important.
-## The 2nd highest effect coefficient is the fertility at age step 2.
-sens_micro$S
-sens_micro$T
+
+sens_growth$S  ## The results show that the growth in the 1st age class is the most important.
+sens_growth$T
 
 tmp = cbind.data.frame(sens_micro$X, pop_total=sens_micro$y)
 
@@ -142,7 +145,118 @@ ggplot(tmp, aes(x = p2, pop_total))+geom_point()
 ```
 
 
+####Sensitivity Analysis: Survival and Fecundity
+Data Setup: 
+```{r}
 
+nsample=200
+stages = c("<1cm","1-10cm","10-20cm","20-40cm",">40cm")
+initial_pop = c(100,100,50,50,50)
+time = 2
+
+# Pine Fecundity
+F0 = 0 
+F1 = 0 
+F2 = 0.0742
+F3 = 0.2536 
+F4 = 1.6902
+
+# Pine Survival
+p0 = 0.9353
+p1 = 0.9827
+p2 = 0.9720
+p3 = 0.9806
+p4 = 0.9959
+
+# Pine Growth
+g01 = 0.0018
+g12 = 0.0104
+g23 = 0.0144
+g34 = 0.0144
+
+# Create our two samples for Sobel
+# Growth
+ps1 = cbind.data.frame(p0 = rnorm(mean=0.9353, sd=0.25, n=nsample), 
+                       p1 = rnorm(mean=0.9827, sd=0.25, n=nsample),
+                       p2 = rnorm(mean = 0.9720, sd=0.25, n=nsample),
+                       p3 = rnorm(mean = 0.9806, sd=0.25, n=nsample),                       
+                       p4 = rnorm(mean = 0.9959, sd=0.25, n=nsample))
+
+p2 = cbind.data.frame(p0 = rnorm(mean=0.9353, sd=0.25, n=nsample), 
+                       p1 = rnorm(mean=0.9827, sd=0.25, n=nsample),
+                       p2 = rnorm(mean = 0.9720, sd=0.25, n=nsample),
+                       p3 = rnorm(mean = 0.9806, sd=0.25, n=nsample),                       
+                       p4 = rnorm(mean = 0.9959, sd=0.25, n=nsample))
+
+# now include uncertainty in our Fertility
+fs1 = cbind.data.frame(F0=rep(F0, times = nsample), 
+                       F1=rep(F1, times = nsample),
+                       F2=rnorm(mean = 0.0742, sd=0.05, n=nsample),
+                       F3=rnorm(mean = 0.2536, sd=0.05, n=nsample),
+                       F4=rnorm(mean = 1.6902, sd=0.05, n=nsample))
+
+fs2 = cbind.data.frame(F0=rep(F0, times = nsample), 
+                       F1=rep(F1, times = nsample),
+                       F2=rnorm(mean = 0.0742, sd=0.05, n=nsample),
+                       F3=rnorm(mean = 0.2536, sd=0.05, n=nsample),
+                       F4=rnorm(mean = 1.6902, sd=0.05, n=nsample))
+
+# now include uncertainty in our Survivability
+gs1 = cbind.data.frame(g01=rep(g01, times = nsample), 
+                       g12=rep(g12, times = nsample),
+                       g23=rep(g23, times = nsample),
+                       g34=rep(g34, times = nsample))
+
+gs2 = cbind.data.frame(g01=rep(g01, times = nsample), 
+                       g12=rep(g12, times = nsample),
+                       g23=rep(g23, times = nsample),
+                       g34=rep(g34, times = nsample))
+
+
+# put survivability and fertility together
+allgs1_surv_fec = cbind.data.frame(gs1,fs1,ps1)
+allgs2_surv_fec = cbind.data.frame(gs2,fs2,ps1)
+```
+
+
+Sobel Run:
+```{r}
+
+# get sobel samples
+sens_surv_fec =sobol2007(model = NULL, allgs1_surv_fec, allgs2_surv_fec, nboot = 300)
+
+head(sens_surv_fec$X)
+nsim=nrow(sens_surv_fec$X)
+
+
+# Run over 20 years to see final population
+# use as numeric to extract parameters
+res = rep(0, times=nsim)
+for (i in 1:nsim) {
+  tmp = whitePine_matrix_model(stages = stages, 
+                               fertility = as.numeric(sens_surv_fec$X[i,c("F0","F1","F2","F3", "F4")]), 
+                               survival = as.numeric(sens_surv_fec$X[i,c("p0","p1","p2", "p3", "p4")]), 
+                               growth = as.numeric(sens_surv_fec$X[i,c("g01", "g12","g23","g34")]), 
+                               initial_pop = initial_pop, 
+                               time = 91)
+  res[i] = tmp$total_pop[time]
+}
+
+# give our results to sensitivity structure
+
+sens_surv_fec_results = sensitivity::tell(sens_surv_fec, res)
+
+# look at results. 
+
+sens_surv_fec_results$S  ## The results show that the fecundity in the 4th age class (F3) is the most important.
+sens_surv_fec_results$T
+
+sens_surv_fec_df = cbind.data.frame(sens_surv_fec_results$X, pop_total=sens_surv_fec_results$y)
+
+ggplot(sens_surv_fec_df, aes(x = F3, pop_total))+geom_point()
+
+
+```
 
 
 
