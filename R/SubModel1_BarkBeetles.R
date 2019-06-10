@@ -1,13 +1,13 @@
 #' Bark Beetle Logistic Growth Model
-#' Add in params and other info
-#' 
 #' 
 #' @param time time since start
 #' @param B beetle population
 #' @param parms - as list with two values, r, K
 #' @param r intrinsic growth rate
 #' @param K carrying capacity
-#' @return derivative of population with time
+#' 
+#' @return derivative of beetle population with respect to time
+#' 
 
 beetle_pop = function(Time, B, parms){
 

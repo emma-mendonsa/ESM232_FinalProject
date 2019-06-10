@@ -1,16 +1,16 @@
-#' Add in params and other info
+#' Whitebark pine projection model
 #'
-#'
-#'
-#'
-#'
-#'
-#'
-#'
+#' @param stages names of each stage to be used to name rows and columns in matrix
+#' @param fertility vector of fertility values for each stage
+#' @param survival vector of survival values for each stage. Values represent the probability of surviving and remaining in the same stage
+#' @param growth vector of growth values for each stage. Values represent the probability of surviving and growing into the next stage
+#' @param initial_pop vector of the initial population struture
+#' @param time length of time to calculate the population structure over
+#' @return List that contains the population structure through time, total population through time, and the population lambda (finite growth rate) based on the initial matrix
 #'
 
 whitePine_matrix_model = function(stages, fertility, survival, growth, 
-                                  initial_pop, time, carbon_coeff = 0.47) {
+                                  initial_pop, time) {
   
   nstages = length(fertility)
   
@@ -27,19 +27,18 @@ whitePine_matrix_model = function(stages, fertility, survival, growth,
   # Fill in with zero values
   whitePine_matrix[,] = 0.0
   
-  # Put fertility vector in the first row
+  # Add fertility values to matric
   whitePine_matrix[1,] = fertility
   
-  # Add in survival values. This is particularly for survival & growth -- the probability that an individual survivies and grows into the next stage
+  # Add survival values to matrix 
   for (i in 1:(nstages)) {
     whitePine_matrix[i,i] = survival[i]
   }
  
+  # Add growth values to matrix
   for (i in 1:(nstages-1)) {
     whitePine_matrix[i+1,i] = growth[i]
   } 
-  
-  stable_stage = as.numeric(stable.stage(whitePine_matrix))
   
   # Matrix to store population structure through time with a row for each age and column for each time step
   pop_structure = as.data.frame(matrix(nrow=nstages, ncol=time))
@@ -49,15 +48,21 @@ whitePine_matrix_model = function(stages, fertility, survival, growth,
   # Add the initial population structure into the first column 
   pop_structure[,1] = initial_pop
   
-  # Create a vector to fill to be filled in with total population size
+  # Create a vector to be filled in with total population size
   total_pop = rep(0, times=time)
   
   for (i in 2:time) {
+    # Calculate whitebark pine population structure through time
     pop_structure[,i] = round(whitePine_matrix %*% pop_structure[,i-1],0)
+    
+    # Find total population size in each timestep
     total_pop[i]=round(sum(pop_structure[,i]),0)
   }
-    
+  
+  # Find the population growth rate of the initial matrix
   lambda = popbio::lambda(whitePine_matrix)
   
-  return(list(pop_structure=pop_structure,total_pop=total_pop,lambda=lambda))
+  return(list(pop_structure=pop_structure, # Table of the population structure
+              total_pop=total_pop, # Total population size
+              lambda=lambda)) # Population growth rate
 }
