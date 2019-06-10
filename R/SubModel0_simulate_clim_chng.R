@@ -4,7 +4,7 @@
 #'
 #'
 
-climate_variables_fun = function(raster,crop_layer,parms){
+simulate_clim_chng_fun = function(raster,crop_layer,parms){
   
   # Crop raster using crop layer
   clim_crop = crop(raster,crop_layer)

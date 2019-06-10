@@ -40,12 +40,12 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
   output_df[,3] = round(beetle_parms$r_max*output_df$btl_rmax_coef,2) # Filling in btl_r row
   output_df[1,4] = beetle_parms$btl_pop_0 # Initial beetle pop size
   output_df[1,5:9] = pine_parms$pine_surv # Initial pine survival
-  
   output_df[1,14:18] = pine_parms$initial_pop # Initial pine population structure
   output_df[1,19] = sum(output_df[1,14:18]) # Initial total pine population
   output_df[1,20] = pine_parms$initial_carbon # Initial carbon contained in the whitepine pop.
   output_df[1,21] = ifelse(clim_df$Su_tmax[1] >36 && clim_df$W_tmin[1] > 2, "H", "L") # Initial probability of fire
   output_df[1,22] = ifelse(clim_df$apr_snow[1] >=80, "Low", ifelse(clim_df$apr_snow[1] >=60, "Mod", "Sev")) # Initial severity of fire
+  output_df[1,23] = pine_parms$initial_carbon
   
   for(i in 2:nrow(clim_df)){
     
@@ -119,8 +119,8 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
                              p_p0 = c (pine_parms$pine_surv[1]* clim_coef), # Climate impact
                              p_p1 = rep(pine_parms$pine_surv[2], years), 
                              p_p2 = rep(pine_parms$pine_surv[3], years),
-                             p_p3 = rep(pine_parms$pine_surv[4], years), # When impacted by beetles, this value decreases as beetles increase.
-                             p_p4 = rep(pine_parms$pine_surv[5], years), #
+                             p_p3 = rep(pine_parms$pine_surv[4], years), # When impacted by beetles, this value decreases as beetles increase
+                             p_p4 = rep(pine_parms$pine_surv[5], years), # When impacted by beetles, this value decreases as beetles increase
                              g01 = c(pine_parms$pine_growth[1]* clim_coef), # Climate impact. This value decreases as CWD increases. More water stress = less growth. 
                              g12 = c(pine_parms$pine_growth[1]* clim_coef), # Climate impact
                              g23 = c(pine_parms$pine_growth[1]* clim_coef), # Climate impact
@@ -146,6 +146,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
       output_df[1,20] = pine_parms$initial_carbon # Initial carbon contained in the whitepine pop.
       output_df[1,21] = ifelse(clim_df$Su_tmax[1] >36 && clim_df$W_tmin[1] > 2, "H", "L") # Initial probability of fire
       output_df[1,22] = ifelse(clim_df$apr_snow[1] >=80, "Low", ifelse(clim_df$apr_snow[1] >=60, "Mod", "Sev")) # Initial severity of fire
+      output_df[1,23] = pine_parms$initial_carbon
       
       for(i in 2:91){
         
@@ -170,8 +171,8 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
         pine_surv = as.numeric(output_df[i-1,5:9]) # Pine survival vector in a given time step
         pine_growth = as.numeric(output_df[i-1,10:13]) # Pine growth vector for a given time step
         init_pop = as.numeric(output_df[i-1,14:18]) # Initial population size, relative to each time step. 
-        output_df$p_p3[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p3[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p3[i-1]) # beetle impact
-        output_df$p_p4[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p4[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p4[i-1]) # beetle impact
+        output_df$p_p3[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p3[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p3[1]) # beetle impact
+        output_df$p_p4[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p4[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p4[1]) # beetle impact
         
         
         # Implement whitebark pine matrix model
@@ -249,6 +250,7 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
       output_df[1,20] = pine_parms$initial_carbon # Initial carbon contained in the whitepine pop.
       output_df[1,21] = ifelse(clim_df$Su_tmax[1] >36 && clim_df$W_tmin[1] > 2, "H", "L") # Initial probability of fire
       output_df[1,22] = ifelse(clim_df$apr_snow[1] >=80, "Low", ifelse(clim_df$apr_snow[1] >=60, "Mod", "Sev")) # Initial severity of fire
+      output_df[1,23] = pine_parms$initial_carbon
       
       for(i in 2:nrow(clim_df)){
         
@@ -273,8 +275,8 @@ whitePine_PopDynamics_model = function(clim_df,clim_scen_name,impact_type,scenar
         pine_surv = as.numeric(output_df[i-1,5:9]) # Pine survival vector in a given time step
         pine_growth = as.numeric(output_df[i-1,10:13]) # Pine growth vector for a given time step
         init_pop = as.numeric(output_df[i-1,14:18]) # Initial population size, relative to each time step. 
-        output_df$p_p3[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p3[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p3[i-1]) # beetle impact
-        output_df$p_p4[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p4[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p4[i-1]) # beetle impact
+        output_df$p_p3[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p3[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p3[1]) # beetle impact
+        output_df$p_p4[i] = ifelse(output_df$btl_pop[i]>1,output_df$p_p4[i-1]*log(output_df$btl_pop[1])/log(output_df$btl_pop[i]),output_df$p_p4[1]) # beetle impact
         
         # Implement whitebark pine matrix model
         pine = whitePine_matrix_model(stages = pine_parms$stages,
