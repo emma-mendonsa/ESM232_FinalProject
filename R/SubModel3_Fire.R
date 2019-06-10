@@ -42,7 +42,11 @@ fire_model = function(initial_pop, pine_biomass, fire_prob, fire_sev, forest_car
                                      initial_pop[4]*sev_sev,
                                      initial_pop[5]*sev_sev)),
                                    
-                                   return("Unknown fire model input"))))) # If some other combination return an error
+                                   list(c(initial_pop[1], 
+                                          initial_pop[2],
+                                          initial_pop[3],
+                                          initial_pop[4],
+                                          initial_pop[5])))))) # If some other combination, assume no fire and return the previous time step's structure
    
   # Create empty data.frame for change in biomass output                                                                
   burnt_biomass = rep(0, times=time) 

@@ -3,7 +3,6 @@
 #' @param raster A raster layer of historic climate data
 #' @param crop_layer A layer of the extent of the area of interest
 #' @param parms A list of parameters that specifies the total change (i.e. 10 degrees celcius) and the time span you'd like change to occur over (i.e. 91 years)
-#'
 #' @return clim_vector vector of the value of the climate variable through time
 #' 
 

@@ -5,7 +5,6 @@
 #' @param parms - as list with two values, r, K
 #' @param r intrinsic growth rate
 #' @param K carrying capacity
-#' 
 #' @return derivative of beetle population with respect to time
 #' 
 
